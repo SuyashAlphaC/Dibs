@@ -19,6 +19,7 @@ export function DiscoverApp() {
   const [mode,setMode] = useState(initialMode);
   const [category,setCategory] = useState("All");
   const [marketList,setMarketList] = useState(seedMarkets);
+  const [dataSource,setDataSource] = useState<"demo"|"envio">("demo");
   const [modal,setModal] = useState<ModalState>(null);
   const [toast,setToast] = useState<string|null>(null);
   const [recentId,setRecentId] = useState<string|null>(null);
@@ -37,7 +38,8 @@ export function DiscoverApp() {
       fetch(`/api/casts${query}`,{signal:controller.signal})
         .then(response=>response.json())
         .then((payload:{source:string;casts:CastMarket[]})=>{
-          if(payload.source==="envio"&&payload.casts.length)setMarketList(payload.casts);
+          if(payload.source==="envio"&&payload.casts.length){setMarketList(payload.casts);setDataSource("envio");}
+          else {setMarketList(seedMarkets);setDataSource("demo");}
         })
         .catch(()=>{});
     };
@@ -46,7 +48,14 @@ export function DiscoverApp() {
     return()=>{controller.abort();window.clearInterval(interval);};
   },[identity.address]);
 
-  function startDibs(market:CastMarket) { setModal({market,state:"confirm"}); }
+  function startDibs(market:CastMarket) {
+    if(!/^\d+$/.test(market.id)){
+      setToast("Preview market — live staking unlocks when the Envio indexer is connected.");
+      window.setTimeout(()=>setToast(null),5200);
+      return;
+    }
+    setModal({market,state:"confirm"});
+  }
   async function confirmDibs() {
     if (!modal) return;
     if (!identity.authenticated) { identity.login(); setToast("You're signed in. Confirm once more to call Dibs."); return; }
@@ -67,15 +76,15 @@ export function DiscoverApp() {
 
   return <>
     <section className="discover-hero">
-      <div><div className="section-kicker"><span className="live-dot"/> Live discovery</div><h1>Spot what matters<br/><em>before everyone else.</em></h1><p>Back emerging ideas with conviction. Build a reputation for being early.</p></div>
-      <div className="hero-stat"><span>Markets live</span><strong>{marketList.filter(m=>m.status==="active"||m.status==="closing").length}</strong><small>Indexed on Monad</small></div>
+      <div><div className="section-kicker"><span className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Live discovery":"Curated preview"}</div><h1>Spot what matters<br/><em>before everyone else.</em></h1><p>Back emerging ideas with conviction. Build a reputation for being early.</p></div>
+      <div className="hero-stat"><span>{dataSource==="envio"?"Markets live":"Preview markets"}</span><strong>{marketList.filter(m=>m.status==="active"||m.status==="closing").length}</strong><small>{dataSource==="envio"?"Indexed on Monad":"Live contract deployed on Monad"}</small></div>
     </section>
     <div className="ticker" aria-label="Live market updates"><span>LIVE</span><div><b>AI agents</b> +31%</div><div><b>Consumer crypto</b> +24%</div><div><b>Social graphs</b> +14%</div></div>
     <section className="feed-controls">
       <div className="mode-tabs">{["trending","early","opened"].map((item)=><button key={item} className={mode===item?"active":""} onClick={()=>setMode(item)}>{item==="opened"?"Just opened":item}</button>)}</div>
       <div className="category-filter">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
     </section>
-    <div className="feed-label"><span>{visible.length} signals</span><span>Ranked by onchain conviction</span></div>
+    <div className="feed-label"><span>{visible.length} signals</span><span>{dataSource==="envio"?"Ranked by onchain conviction":"Preview data · staking disabled"}</span></div>
     <section className="market-feed">{visible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
     {modal&&<div className="modal-backdrop" role="presentation" onMouseDown={(event)=>event.target===event.currentTarget&&setModal(null)}><section className="dibs-modal" role="dialog" aria-modal="true" aria-labelledby="dibs-title">
       <button className="modal-close" onClick={()=>setModal(null)} aria-label="Close"><Icon name="close"/></button>

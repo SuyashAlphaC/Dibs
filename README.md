@@ -14,6 +14,19 @@
 
 This is hackathon software and has not been audited. Do not use it with production funds.
 
+## Monad testnet deployment
+
+- App: https://dibs-metropolis.vercel.app
+- Network: Monad testnet (`10143`)
+- Dibs: `0x0fFd42613e0Bd0f328C23DeCB7c33f81B2490F84`
+- CRE receiver: `0x78B87B938cbdd9453F2dA6adA043d74d792C9A81`
+- CRE forwarder: `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`
+- Deployment block: `65900523`
+- Initial epoch: `1`, funded with `1 MON`
+
+Transaction hashes and the receiver's current fail-closed CRE state are recorded in
+[`deployments/monad-testnet.md`](deployments/monad-testnet.md).
+
 ## Settlement liveness policy
 
 The deployment script configures a one-hour result-submission grace period after an epoch

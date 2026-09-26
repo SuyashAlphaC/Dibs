@@ -12,10 +12,11 @@ Quality rules are executable rather than narrative:
 - The opening quality-weighted baseline is subtracted.
 - Canonically ordered evidence is hashed and stored with the result.
 
-Run `npm test` and `npm run typecheck` locally. In `config.staging.json`, set `chainId` to the target EVM chain ID and `contractAddress` to the deployed **receiver** address (not the core Dibs address), then use the CRE CLI to simulate and deploy:
+Run `npm test` and `npm run typecheck` locally. `config.testnet.json` targets the deployed **receiver** address (not the core Dibs address). Authenticate the CRE CLI, then simulate and deploy the workflow through the checked-in target manifests:
 
 ```sh
-cre workflow simulate --target staging-settings --config config.staging.json src/workflow.ts
+cre workflow simulate . --target staging-settings
+cre workflow deploy . --target staging-settings --yes
 ```
 
 The receiver must trust the network's official MockForwarder for a broadcast simulation or KeystoneForwarder for production; query your tenant's current addresses with `cre workflow supported-chains --output json`. Keep its expected workflow ID unset during simulation because MockForwarder omits production metadata. After production workflow deployment, call `setExpectedWorkflowId(bytes32)` with its ID before broadcasting reports.

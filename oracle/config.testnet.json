@@ -1,10 +1,10 @@
 {
   "schedule": "0 */15 * * * *",
-  "observationApiUrl": "https://YOUR_DEPLOYMENT.example/api/oracle/observations",
+  "observationApiUrl": "https://dibs-metropolis.vercel.app/api/oracle/observations",
   "evm": {
     "chainSelectorName": "monad-testnet",
     "chainId": 10143,
-    "contractAddress": "0x0000000000000000000000000000000000000001",
+    "contractAddress": "0x78B87B938cbdd9453F2dA6adA043d74d792C9A81",
     "isTestnet": true
   }
 }
