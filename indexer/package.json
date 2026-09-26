@@ -8,11 +8,10 @@
     "dev": "envio dev"
   },
   "dependencies": {
-    "envio": "latest"
+    "envio": "3.12.1"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "typescript": "^5.9.0"
   }
 }
-

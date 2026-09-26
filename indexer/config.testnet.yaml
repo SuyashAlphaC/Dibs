@@ -23,10 +23,9 @@ contracts:
 
 chains:
   - id: 10143
-    start_block: 0
+    start_block: 65900523
     rpc:
       - url: https://testnet-rpc.monad.xyz
     contracts:
       - name: Dibs
-        # Replace with the deployed testnet address and deployment block.
-        address: "0x0000000000000000000000000000000000000001"
+        address: "0x0fFd42613e0Bd0f328C23DeCB7c33f81B2490F84"
