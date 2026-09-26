@@ -76,6 +76,7 @@ export function DiscoverApp() {
       const updated = marketList.map((market)=>market.id===target.id?{...market,convictionScore:market.convictionScore+market.nextUnitCost,totalUnits:market.totalUnits+1,totalStaked:market.totalStaked+market.nextUnitCost,nextUnitCost:market.nextUnitCost+0.001,userHasDibs:true,userStake:market.nextUnitCost}:market).sort((a,b)=>b.totalStaked-a.totalStaked).map((market,index)=>({...market,rank:index+1,rankDelta:market.id===target.id?target.rank-(index+1):market.rankDelta}));
       const update=()=>setMarketList(updated);
       if ("startViewTransition" in document) (document as Document & {startViewTransition:(cb:()=>void)=>void}).startViewTransition(update); else update();
+      window.dispatchEvent(new Event("dibs:position-confirmed"));
       const newRank=updated.find((market)=>market.id===target.id)?.rank;
       setRecentId(target.id); setModal(null); setToast(`Dibs confirmed — ${target.author.displayName} moved from #${target.rank} to #${newRank}.`);
       window.setTimeout(()=>setRecentId(null),2400); window.setTimeout(()=>setToast(null),5200);

@@ -13,16 +13,28 @@ export function useScoutDashboard(address?:string){
     setLive(false);
     if(!address?.match(/^0x[a-fA-F0-9]{40}$/)){setLoading(false);return;}
     const controller=new AbortController();
+    let refreshing=false;
     setLoading(true);
-    fetch(`/api/scout?address=${address}`,{signal:controller.signal})
-      .then(async response=>{
+    const refresh=async()=>{
+      if(refreshing||controller.signal.aborted)return;
+      refreshing=true;
+      try{
+        const response=await fetch(`/api/scout?address=${address}`,{signal:controller.signal,cache:"no-store"});
         if(!response.ok)throw new Error("Scout data unavailable");
-        return response.json() as Promise<{source:string;dashboard:ScoutDashboard|null}>;
-      })
-      .then(payload=>{setLive(payload.source==="envio");setDashboard(payload.dashboard);})
-      .catch(()=>{if(!controller.signal.aborted){setLive(false);setDashboard(null);}})
-      .finally(()=>{if(!controller.signal.aborted)setLoading(false);});
-    return()=>controller.abort();
+        const payload=await response.json() as {source:string;dashboard:ScoutDashboard|null};
+        setLive(payload.source==="envio");
+        setDashboard(payload.dashboard);
+      }catch{
+        if(!controller.signal.aborted)setLive(false);
+      }finally{
+        refreshing=false;
+        if(!controller.signal.aborted)setLoading(false);
+      }
+    };
+    void refresh();
+    const interval=window.setInterval(refresh,5000);
+    window.addEventListener("dibs:position-confirmed",refresh);
+    return()=>{controller.abort();window.clearInterval(interval);window.removeEventListener("dibs:position-confirmed",refresh);};
   },[address]);
 
   return {dashboard,loading,live};

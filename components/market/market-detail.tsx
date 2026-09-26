@@ -20,6 +20,7 @@ export function MarketDetail({market}: {market:CastMarket}) {
       const transaction=await scoutTransaction(market.id);
       await identity.sendStake(transaction);
       setStakeState("success");
+      window.dispatchEvent(new Event("dibs:position-confirmed"));
     }catch(error){
       const message=error instanceof Error&&/rejected|denied|cancelled/i.test(error.message)
         ?"You cancelled the wallet request. Nothing was charged."
