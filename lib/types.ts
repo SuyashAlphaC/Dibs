@@ -1,0 +1,47 @@
+export type MarketStatus = "active" | "closing" | "closed" | "challenged" | "settled";
+
+export interface CastAuthor {
+  fid: number;
+  username: string;
+  displayName: string;
+  avatarUrl: string;
+}
+
+export interface CastMarket {
+  id: string;
+  hash: `0x${string}`;
+  author: CastAuthor;
+  text: string;
+  timestamp: string;
+  ageMinutes: number;
+  likes: number;
+  recasts: number;
+  replies: number;
+  totalUnits: number;
+  totalStaked: number;
+  convictionScore: number;
+  rank: number;
+  rankDelta: number;
+  movementPercent: number;
+  newScouts: number;
+  category: string;
+  status: MarketStatus;
+  timeLeftMinutes: number;
+  whyRising: string;
+  nextUnitCost: number;
+  potentialReward: number;
+  userHasDibs?: boolean;
+  userStake?: number;
+  settlementScore?: number;
+}
+
+export interface ScoutPosition {
+  marketId: string;
+  author: string;
+  excerpt: string;
+  entryRank: number;
+  currentRank: number;
+  amount: number;
+  potentialReward: number;
+  status: MarketStatus;
+}

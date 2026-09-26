@@ -1,0 +1,16 @@
+node_modules/
+.next/
+*.tsbuildinfo
+.env
+.env.local
+
+contracts/cache/
+contracts/out/
+contracts/broadcast/
+
+indexer/.envio/
+indexer/generated/
+
+oracle/dist/
+
+.vercel

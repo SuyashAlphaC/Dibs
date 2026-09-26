@@ -1,0 +1,10 @@
+{
+  "schedule": "0 */15 * * * *",
+  "observationApiUrl": "https://YOUR_DEPLOYMENT.example/api/oracle/observations",
+  "evm": {
+    "chainSelectorName": "monad-testnet",
+    "chainId": 10143,
+    "contractAddress": "0x0000000000000000000000000000000000000001",
+    "isTestnet": true
+  }
+}

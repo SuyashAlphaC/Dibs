@@ -1,0 +1,65 @@
+enum MarketStatus {
+  OPEN
+  PENDING
+  CHALLENGED
+  SETTLED
+}
+
+type Epoch {
+  id: ID!
+  opensAt: BigInt!
+  closesAt: BigInt!
+  rewardPool: BigInt!
+  allocated: BigInt!
+  reserve: BigInt!
+  marketCount: Int!
+  finalized: Boolean!
+}
+
+type Market {
+  id: ID!
+  epochId: String!
+  castHash: String!
+  creator: String!
+  baselineEngagement: BigInt!
+  openedAt: BigInt!
+  closesAt: BigInt!
+  seedStake: BigInt!
+  totalStake: BigInt!
+  totalUnits: BigInt!
+  scoutCount: Int!
+  qualityGrowthScore: BigInt!
+  evidenceHash: String
+  resultSubmittedAt: BigInt
+  resultExpired: Boolean!
+  status: MarketStatus!
+  challenged: Boolean!
+  challenger: String
+  challengeBond: BigInt!
+  challengeUpheld: Boolean
+  challengeExpired: Boolean!
+  scoutAllocation: BigInt!
+  creatorAllocation: BigInt!
+  scoutClaimed: BigInt!
+  creatorClaimed: BigInt!
+}
+
+type Scout {
+  id: ID!
+  calls: Int!
+  successfulCalls: Int!
+  units: BigInt!
+  spent: BigInt!
+  claimed: BigInt!
+  withdrawnCredit: BigInt!
+}
+
+type Position {
+  id: ID!
+  marketId: String!
+  scout: String!
+  units: BigInt!
+  spent: BigInt!
+  claimed: BigInt!
+  firstScoutedAt: BigInt!
+}

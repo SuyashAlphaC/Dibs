@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: dibs-monad-indexer
+description: Live markets, positions, settlement, and scout reputation for Dibs.
+
+contracts:
+  - name: Dibs
+    events:
+      - event: "EpochCreated(uint256 indexed epochId, uint40 opensAt, uint40 closesAt, uint256 seed)"
+      - event: "EpochFunded(uint256 indexed epochId, address indexed funder, uint256 amount)"
+      - event: "MarketOpened(uint256 indexed marketId, uint256 indexed epochId, bytes32 indexed castHash, address creator, uint64 baselineEngagement)"
+      - event: "MarketSeeded(uint256 indexed marketId, uint256 indexed epochId, uint256 amount)"
+      - event: "Scouted(uint256 indexed marketId, address indexed scout, uint256 units, uint256 cost, uint256 totalStake)"
+      - event: "ResultSubmitted(uint256 indexed marketId, uint256 qualityGrowthScore, bytes32 evidenceHash)"
+      - event: "ResultExpired(uint256 indexed marketId, bytes32 evidenceHash)"
+      - event: "MarketChallenged(uint256 indexed marketId, address indexed challenger, uint256 bond)"
+      - event: "ChallengeResolved(uint256 indexed marketId, bool upheld, uint256 qualityGrowthScore, bytes32 evidenceHash)"
+      - event: "ChallengeExpired(uint256 indexed marketId, address indexed challenger, bytes32 evidenceHash)"
+      - event: "MarketAllocated(uint256 indexed marketId, uint256 scoutAllocation, uint256 creatorAllocation)"
+      - event: "EpochFinalized(uint256 indexed epochId, uint256 allocated, uint256 reserve)"
+      - event: "ScoutClaimed(uint256 indexed marketId, address indexed scout, uint256 amount)"
+      - event: "CreatorClaimed(uint256 indexed marketId, address indexed creator, uint256 amount)"
+      - event: "CreditWithdrawn(address indexed account, uint256 amount)"
+
+chains:
+  - id: 143
+    start_block: 0
+    rpc:
+      - url: https://rpc.monad.xyz
+    contracts:
+      - name: Dibs
+        # Replace after deployment; keeping a valid address makes codegen deterministic.
+        address: "0x0000000000000000000000000000000000000001"

@@ -1,0 +1,18 @@
+{
+  "name": "@dibs/indexer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "codegen": "envio codegen",
+    "typecheck": "tsc --noEmit",
+    "dev": "envio dev"
+  },
+  "dependencies": {
+    "envio": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
+
