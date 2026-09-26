@@ -1,5 +1,6 @@
 import {NextResponse} from "next/server";
 import {getMarketsAwaitingResult,type SettlementMarket} from "@/lib/live-markets";
+import {toNeynarCastHash} from "@/lib/farcaster";
 
 type InteractionKind="like"|"recast"|"reply";
 type NeynarUser={
@@ -32,9 +33,10 @@ function flattenReplies(replies:NeynarReply[]):NeynarReply[]{
 }
 
 async function observeMarket(market:SettlementMarket,apiKey:string){
+  const neynarHash=toNeynarCastHash(market.castHash);
   const [reactionPayload,conversationPayload]=await Promise.all([
-    neynar("/v2/farcaster/reactions/cast/",{hash:market.castHash,types:"all",limit:"100"},apiKey) as Promise<{reactions?:NeynarReaction[]}>,
-    neynar("/v2/farcaster/cast/conversation/",{identifier:market.castHash,type:"hash",reply_depth:"5",limit:"50",sort_type:"chron"},apiKey) as Promise<{conversation?:{cast?:{direct_replies?:NeynarReply[]}}}>,
+    neynar("/v2/farcaster/reactions/cast/",{hash:neynarHash,types:"all",limit:"100"},apiKey) as Promise<{reactions?:NeynarReaction[]}>,
+    neynar("/v2/farcaster/cast/conversation/",{identifier:neynarHash,type:"hash",reply_depth:"5",limit:"50",sort_type:"chron"},apiKey) as Promise<{conversation?:{cast?:{direct_replies?:NeynarReply[]}}}>,
   ]);
   const observedAt=market.closesAt;
   const reactions=(reactionPayload.reactions??[]).map(reaction=>userInteraction(reaction.user,reaction.object==="likes"?"like":"recast",observedAt));

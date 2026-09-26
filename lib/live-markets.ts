@@ -1,4 +1,5 @@
 import type {CastMarket, MarketStatus} from "@/lib/types";
+import {toNeynarCastHash} from "@/lib/farcaster";
 
 type IndexedMarket = {
   id: string;
@@ -118,7 +119,7 @@ async function fetchNeynarCast(hash: string): Promise<NeynarCast | null> {
 
   try {
     const url = new URL("https://api.neynar.com/v2/farcaster/cast");
-    url.searchParams.set("identifier", hash);
+    url.searchParams.set("identifier", toNeynarCastHash(hash));
     url.searchParams.set("type", "hash");
     const response = await fetch(url, {
       headers: {"x-api-key": apiKey, "x-neynar-experimental": "true"},
@@ -145,10 +146,11 @@ function statusOf(status: IndexedMarket["status"], closesAt: number): MarketStat
 }
 
 function placeholderCast(market: IndexedMarket): NeynarCast {
+  const castHash=toNeynarCastHash(market.castHash);
   const shortCreator = `${market.creator.slice(0, 6)}…${market.creator.slice(-4)}`;
   return {
-    hash: market.castHash,
-    text: `Farcaster cast ${market.castHash.slice(0, 10)}…`,
+    hash: castHash,
+    text: `Farcaster cast ${castHash.slice(0, 10)}…`,
     timestamp: new Date(Number(market.openedAt) * 1000).toISOString(),
     author: {fid: 0, username: shortCreator, display_name: shortCreator},
   };
@@ -172,7 +174,7 @@ async function toCastMarket(
 
   return {
     id: market.id,
-    hash: market.castHash as `0x${string}`,
+    hash: cast.hash as `0x${string}`,
     author: {
       fid: cast.author.fid,
       username: cast.author.username,
