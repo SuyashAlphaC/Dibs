@@ -18,6 +18,16 @@
 - Reward pool: `1 MON`
 - Creation transaction: `0x5aa07cfe37b002e90e8dce6ccc7a5ef9bea4686ac4f38099009306a085148a82`
 
+## First live market
+
+- Market: `1`
+- Cast: `0x3808d724117a8251b9ded16fe060e0c17d5a908a` (Vitalik Buterin, PeerDAS)
+- Creator: `0x96b6bb2bd2eba3b4fbefd7dbac448ad7b6cbf279`
+- Opening baseline: `72`
+- Seed conviction: `0.002 MON`
+- Block: `65922439`
+- Transaction: `0xe94b53cafc4b2b9c4f0970d36c5e6dba16ef8c4d452434ba0a650d9265fe1912`
+
 ## CRE safety state
 
 The receiver is temporarily pinned to
