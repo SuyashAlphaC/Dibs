@@ -22,10 +22,13 @@ type Identity = {
 const IdentityContext = createContext<Identity | null>(null);
 
 function PrivyIdentity({children}: {children: React.ReactNode}) {
-  const {ready:privyReady, authenticated, connectOrCreateWallet, logout} = usePrivy();
+  const {ready:privyReady, authenticated, login, logout} = usePrivy();
   const {ready:walletsReady, wallets} = useWallets();
   const {sendTransaction} = useSendTransaction();
-  const wallet=wallets[0];
+  // `connectOrCreateWallet` intentionally does not authenticate external wallets.
+  // Only expose a wallet after Privy has completed the signed login flow, and
+  // prefer the external wallet the scout explicitly connected.
+  const wallet=authenticated?(wallets.find(candidate=>candidate.walletClientType!=="privy")??wallets[0]):undefined;
   const [balance,setBalance]=useState<string>();
   const refreshBalance=useCallback(async()=>{
     if(!wallet?.address){setBalance(undefined);return;}
@@ -44,7 +47,7 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
       address: wallet?.address,
       balance,
       mode: "privy",
-      login: connectOrCreateWallet,
+      login: () => login(),
       logout,
       sendStake: async (transaction) => {
         if (!transaction) throw new Error("Contract address is not configured.");
@@ -60,7 +63,7 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
         return result.hash;
       },
     }),
-    [authenticated, balance, connectOrCreateWallet, logout, privyReady, refreshBalance, sendTransaction, wallet, walletsReady],
+    [authenticated, balance, login, logout, privyReady, refreshBalance, sendTransaction, wallet, walletsReady],
   );
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>;
 }
