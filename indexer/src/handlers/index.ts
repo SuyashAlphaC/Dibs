@@ -1,4 +1,4 @@
-import {indexer} from "envio";
+import { indexer } from "envio";
 
 const ZERO = 0n;
 
