@@ -10,7 +10,16 @@ import {markets as seedMarkets} from "@/lib/mock/markets";
 import type {CastMarket} from "@/lib/types";
 import {scoutTransaction} from "@/lib/contract";
 
-type ModalState = {market:CastMarket;state:"confirm"|"pending"|"error"}|null;
+type ModalState = {market:CastMarket;state:"confirm"|"pending"|"error";error?:string}|null;
+
+function transactionMessage(error:unknown){
+  if(error instanceof Error){
+    if(/rejected|denied|cancelled/i.test(error.message))return "You cancelled the wallet request. Nothing was charged.";
+    if(/fund|balance/i.test(error.message))return "This wallet does not have enough MON for the transaction.";
+    if(/network|chain/i.test(error.message))return "Switch to Monad Testnet in your wallet and try again.";
+  }
+  return "The transaction did not confirm. Nothing was recorded by Dibs.";
+}
 
 export function DiscoverApp() {
   const params = useSearchParams();
@@ -58,12 +67,11 @@ export function DiscoverApp() {
   }
   async function confirmDibs() {
     if (!modal) return;
-    if (!identity.authenticated) { identity.login(); setToast("You're signed in. Confirm once more to call Dibs."); return; }
+    if (!identity.authenticated||!identity.walletReady) { identity.login(); setToast("Connect your wallet, then confirm once more to call Dibs."); return; }
     setModal({...modal,state:"pending"});
     try {
       const target = modal.market;
-      const numericId=Number(target.id);
-      const transaction=Number.isFinite(numericId)?scoutTransaction(numericId,target.totalUnits):null;
+      const transaction=await scoutTransaction(target.id);
       await identity.sendStake(transaction);
       const updated = marketList.map((market)=>market.id===target.id?{...market,convictionScore:market.convictionScore+market.nextUnitCost,totalUnits:market.totalUnits+1,totalStaked:market.totalStaked+market.nextUnitCost,nextUnitCost:market.nextUnitCost+0.001,userHasDibs:true,userStake:market.nextUnitCost}:market).sort((a,b)=>b.totalStaked-a.totalStaked).map((market,index)=>({...market,rank:index+1,rankDelta:market.id===target.id?target.rank-(index+1):market.rankDelta}));
       const update=()=>setMarketList(updated);
@@ -71,7 +79,7 @@ export function DiscoverApp() {
       const newRank=updated.find((market)=>market.id===target.id)?.rank;
       setRecentId(target.id); setModal(null); setToast(`Dibs confirmed — ${target.author.displayName} moved from #${target.rank} to #${newRank}.`);
       window.setTimeout(()=>setRecentId(null),2400); window.setTimeout(()=>setToast(null),5200);
-    } catch { setModal({...modal,state:"error"}); }
+    } catch(error) { setModal({...modal,state:"error",error:transactionMessage(error)}); }
   }
 
   return <>
@@ -88,12 +96,12 @@ export function DiscoverApp() {
     <section className="market-feed">{visible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
     {modal&&<div className="modal-backdrop" role="presentation" onMouseDown={(event)=>event.target===event.currentTarget&&setModal(null)}><section className="dibs-modal" role="dialog" aria-modal="true" aria-labelledby="dibs-title">
       <button className="modal-close" onClick={()=>setModal(null)} aria-label="Close"><Icon name="close"/></button>
-      {modal.state==="pending"?<div className="modal-status"><span className="loading-orbit"/><h2>Calling Dibs…</h2><p>Adding your signal to the market.</p></div>:modal.state==="error"?<div className="modal-status"><span className="error-mark">!</span><h2>That didn’t go through</h2><p>Your balance is untouched. Try again when you’re ready.</p><button className="primary-button" onClick={()=>setModal({...modal,state:"confirm"})}>Try again</button></div>:<>
+      {modal.state==="pending"?<div className="modal-status"><span className="loading-orbit"/><h2>Confirming on Monad…</h2><p>Keep this window open while your transaction is mined.</p></div>:modal.state==="error"?<div className="modal-status"><span className="error-mark">!</span><h2>That didn’t go through</h2><p>{modal.error}</p><button className="primary-button" onClick={()=>setModal({...modal,state:"confirm",error:undefined})}>Try again</button></div>:<>
         <div className="modal-icon"><Icon name="spark"/></div><p className="eyebrow">Confirm your signal</p><h2 id="dibs-title">Call Dibs on this cast?</h2>
         <div className="modal-cast"><div><Avatar name={modal.market.author.displayName} size={30}/><span><strong>{modal.market.author.displayName}</strong><small>@{modal.market.author.username}</small></span></div><p>“{modal.market.text.slice(0,125)}…”</p></div>
         <div className="confirm-grid"><div><span>Your conviction</span><strong>{modal.market.nextUnitCost.toFixed(3)} MON</strong></div><div><span>Current rank</span><strong>#{modal.market.rank}</strong></div><div><span>Market conviction</span><strong className="positive">{modal.market.totalStaked.toFixed(3)} MON</strong></div></div>
         <p className="modal-note">If the cast sustains quality attention, early scouts share the reward.</p>
-        <button className="primary-button" onClick={confirmDibs}>{identity.authenticated?`Confirm Dibs · ${modal.market.nextUnitCost.toFixed(3)} MON`:"Sign in to confirm"}</button>
+        <button className="primary-button" onClick={confirmDibs} disabled={!identity.ready}>{!identity.ready?"Loading wallet…":identity.authenticated&&identity.walletReady?`Confirm Dibs · ${modal.market.nextUnitCost.toFixed(3)} MON`:"Connect wallet to confirm"}</button>
       </>}
     </section></div>}
     {toast&&<div className="toast" role="status"><span><Icon name="check"/></span><p>{toast}</p><button onClick={()=>setToast(null)} aria-label="Dismiss"><Icon name="close"/></button></div>}

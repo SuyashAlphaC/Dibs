@@ -258,7 +258,19 @@ export async function getScoutDashboard(scoutAddress: string): Promise<ScoutDash
     {scout: scoutId},
   );
   const scout = data?.Scout[0];
-  if (!data || !scout) return null;
+  if (!data) return null;
+  if (!scout) return {
+    calls: 0,
+    successfulCalls: 0,
+    units: 0,
+    spent: 0,
+    claimed: 0,
+    withdrawnCredit: 0,
+    hitRate: 0,
+    roi: 0,
+    averageLeadMinutes: 0,
+    positions: [],
+  };
 
   const owned = new Set(data.Position.map((position) => position.marketId));
   const rankedMarkets = await Promise.all(

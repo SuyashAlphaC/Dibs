@@ -2,6 +2,7 @@ import type {Metadata} from "next";
 import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import "./avatar.css";
+import "./integration.css";
 import {IdentityProvider} from "@/components/identity-provider";
 import {AppShell} from "@/components/layout/app-shell";
 

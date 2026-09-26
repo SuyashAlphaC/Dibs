@@ -1,13 +1,18 @@
 "use client";
 
 import {PrivyProvider, usePrivy, useSendTransaction, useWallets} from "@privy-io/react-auth";
-import {createContext, useContext, useMemo, useState} from "react";
-import {monad} from "@/lib/contract";
+import {createContext, useCallback, useContext, useEffect, useMemo, useState} from "react";
+import {formatEther} from "viem";
+import {monad, monadClient} from "@/lib/contract";
 
 type Transaction = {to: `0x${string}`; data: `0x${string}`; value: bigint};
 type Identity = {
+  ready: boolean;
   authenticated: boolean;
+  walletReady: boolean;
+  chainReady: boolean;
   address?: string;
+  balance?: string;
   mode: "privy" | "demo";
   login: () => void;
   logout: () => void;
@@ -17,26 +22,45 @@ type Identity = {
 const IdentityContext = createContext<Identity | null>(null);
 
 function PrivyIdentity({children}: {children: React.ReactNode}) {
-  const {authenticated, login, logout} = usePrivy();
-  const {wallets} = useWallets();
+  const {ready:privyReady, authenticated, connectOrCreateWallet, logout} = usePrivy();
+  const {ready:walletsReady, wallets} = useWallets();
   const {sendTransaction} = useSendTransaction();
+  const wallet=wallets[0];
+  const [balance,setBalance]=useState<string>();
+  const refreshBalance=useCallback(async()=>{
+    if(!wallet?.address){setBalance(undefined);return;}
+    try{
+      const value=await monadClient.getBalance({address:wallet.address as `0x${string}`});
+      setBalance(Number(formatEther(value)).toLocaleString(undefined,{maximumFractionDigits:3}));
+    }catch{setBalance(undefined);}
+  },[wallet?.address]);
+  useEffect(()=>{void refreshBalance();},[refreshBalance]);
   const value = useMemo<Identity>(
     () => ({
+      ready: privyReady&&walletsReady,
       authenticated,
-      address: wallets[0]?.address,
+      walletReady: Boolean(wallet),
+      chainReady: wallet?.chainId===`eip155:${monad.id}`,
+      address: wallet?.address,
+      balance,
       mode: "privy",
-      login,
+      login: connectOrCreateWallet,
       logout,
       sendStake: async (transaction) => {
         if (!transaction) throw new Error("Contract address is not configured.");
+        if (!wallet) throw new Error("Connect a wallet before calling Dibs.");
+        if(wallet.chainId!==`eip155:${monad.id}`) await wallet.switchChain(monad.id);
         const result = await sendTransaction(transaction, {
-          address: wallets[0]?.address,
+          address: wallet.address,
           sponsor: process.env.NEXT_PUBLIC_SPONSOR_TRANSACTIONS === "true",
         });
+        const receipt=await monadClient.waitForTransactionReceipt({hash:result.hash});
+        if(receipt.status!=="success")throw new Error("The transaction reverted.");
+        await refreshBalance();
         return result.hash;
       },
     }),
-    [authenticated, login, logout, sendTransaction, wallets],
+    [authenticated, balance, connectOrCreateWallet, logout, privyReady, refreshBalance, sendTransaction, wallet, walletsReady],
   );
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>;
 }
@@ -45,8 +69,12 @@ function DemoIdentity({children}: {children: React.ReactNode}) {
   const [authenticated, setAuthenticated] = useState(false);
   const value = useMemo<Identity>(
     () => ({
+      ready:true,
       authenticated,
+      walletReady:authenticated,
+      chainReady:true,
       address: authenticated ? "0xD1b5…A143" : undefined,
+      balance:authenticated?"12.4":undefined,
       mode: "demo",
       login: () => setAuthenticated(true),
       logout: () => setAuthenticated(false),
@@ -68,7 +96,7 @@ export function IdentityProvider({children}: {children: React.ReactNode}) {
     <PrivyProvider
       appId={appId}
       config={{
-        loginMethods: ["farcaster", "email", "passkey"],
+        loginMethods: ["wallet", "farcaster", "email", "passkey"],
         embeddedWallets: {ethereum: {createOnLogin: "users-without-wallets"}},
         defaultChain: monad,
         supportedChains: [monad],

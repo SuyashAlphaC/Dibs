@@ -1,0 +1,11 @@
+button:disabled{cursor:not-allowed}
+.activity-event{display:grid;grid-template-columns:10px minmax(0,1fr) 48px 90px;align-items:center;gap:13px;padding:17px;border-bottom:1px solid var(--line)}
+.activity-event:hover{background:var(--s2)}
+.empty-state{display:flex;min-height:190px;padding:32px;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-top:1px solid var(--line)}
+.empty-state strong{font-size:14px}
+.empty-state p{max-width:390px;margin:6px auto 18px;color:var(--muted);font-size:10px}
+.empty-state .primary-button{display:grid;place-items:center;min-width:132px;padding:0 16px}
+.rail-empty{padding:20px 16px;border:1px dashed var(--line2);border-radius:10px;text-align:center}
+.rail-empty strong{font-size:11px}
+.rail-empty p{margin-top:5px;color:var(--muted);font-size:9px}
+@media(max-width:767px){.profile-person .generated-avatar{width:60px!important;height:60px!important}.activity-event{grid-template-columns:10px minmax(0,1fr) 48px}.activity-event b{display:none}}
