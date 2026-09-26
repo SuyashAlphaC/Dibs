@@ -1,6 +1,6 @@
 import {createPublicClient, defineChain, encodeFunctionData, http} from "viem";
 
-const configuredChainId=Number(process.env.NEXT_PUBLIC_MONAD_CHAIN_ID??143);
+const configuredChainId=Number(process.env.NEXT_PUBLIC_MONAD_CHAIN_ID??10143);
 const configuredRpcUrl=process.env.NEXT_PUBLIC_MONAD_RPC_URL??(configuredChainId===10143?"https://testnet-rpc.monad.xyz":"https://rpc.monad.xyz");
 
 export const monad = defineChain({
