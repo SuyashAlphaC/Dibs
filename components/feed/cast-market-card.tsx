@@ -9,7 +9,7 @@ export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMar
     <div className="rank-column"><strong>#{market.rank}</strong>{market.rankDelta!==0&&<span className={market.rankDelta>0?"up":"down"}>{market.rankDelta>0?"↑":"↓"}{Math.abs(market.rankDelta)}</span>}</div>
     <div className="cast-body">
       <div className="author-row">
-        <Avatar name={market.author.displayName} size={42}/>
+        <Avatar name={market.author.displayName} src={market.author.avatarUrl} size={42}/>
         <div><strong>{market.author.displayName}</strong><span>@{market.author.username} · {market.ageMinutes}m</span></div>
         <span className={`status-pill ${market.status}`}>{market.status==="active"?"Open":market.status}</span>
       </div>

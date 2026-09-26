@@ -10,8 +10,8 @@ import {Avatar} from "@/components/shared/avatar";
 const nav = [
   {href:"/discover",label:"Discover",icon:"discover" as const},
   {href:"/dibs",label:"My Dibs",icon:"dibs" as const},
+  {href:"/profile",label:"Reputation",icon:"profile" as const},
   {href:"/activity",label:"Activity",icon:"activity" as const},
-  {href:"/profile",label:"Profile",icon:"profile" as const},
 ];
 
 export function AppShell({children}: {children: React.ReactNode}) {
@@ -23,31 +23,33 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const positions=dashboard?.positions??[];
   return <div className="app-frame">
     <header className="topbar">
-      <Link href="/discover" className="brand" aria-label="Dibs home"><span className="brand-mark">D</span><span>DIBS</span></Link>
+      <Link href="/discover" className="brand" aria-label="Dibs home"><span className="brand-mark">D</span><span>DIBS</span><i>Monad Metropolis</i></Link>
       <nav className="topnav" aria-label="Primary navigation">
-        {nav.slice(0,3).map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}>{item.label}</Link>)}
+        {nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}>{item.label}</Link>)}
       </nav>
       <div className="topbar-actions">
+        <span className="network-live"><i/>Live</span>
         <Link className="icon-button" aria-label="Activity" href="/activity"><Icon name="bell"/></Link>
         <div className="balance"><span>Monad balance</span><strong>{identity.balance?`${identity.balance} MON`:identity.authenticated?"—":"Not connected"}</strong></div>
         {identity.authenticated&&identity.walletReady ? <button className="avatar-button" onClick={identity.logout} title={`${shortAddress} · Sign out`}><Avatar name={identity.address??"Wallet"} size={34}/></button> : <button className="connect-button" onClick={identity.login} disabled={!identity.ready}>{identity.ready?"Connect wallet":"Loading…"}</button>}
       </div>
     </header>
+    <div className="network-stream"><strong><span/>Protocol stream</strong><p>Monad Testnet · Market #1 open · Envio indexing live · Quality-weighted CRE settlement</p></div>
     <div className="app-grid">
       <aside className="left-rail">
         <nav className="side-nav" aria-label="App sections">
-          <p className="eyebrow">Explore</p>
+          <p className="eyebrow">Workspace</p>
           {nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}><Icon name={item.icon}/><span>{item.label}</span></Link>)}
         </nav>
         <div className="discovery-block">
-          <p className="eyebrow">Discovery</p>
-          <Link href="/discover?mode=trending">Trending <span>48</span></Link>
-          <Link href="/discover?mode=early">Early signals <span>21</span></Link>
-          <Link href="/discover?mode=opened">Just opened <span>12</span></Link>
-          <Link href="/discover?mode=community">Community <span>36</span></Link>
+          <p className="eyebrow">Discovery rails</p>
+          <Link href="/discover?mode=trending">Trending <span>↗</span></Link>
+          <Link href="/discover?mode=early">Early discovery <span>&lt;30m</span></Link>
+          <Link href="/discover?mode=opened">Just opened <span>New</span></Link>
+          <Link href="/discover?mode=community">Farcaster <span>Live</span></Link>
         </div>
         <div className="reputation-mini">
-          <div><span>Your signal</span><strong>{identity.authenticated?score:"—"}</strong></div>
+          <p className="eyebrow">Scout metric alpha</p><div><span>Signal score</span><strong>{identity.authenticated?score:"—"}</strong></div>
           <div className="mini-progress"><i style={{width:`${Math.min(100,score/10)}%`}}/></div>
           <p>{identity.authenticated?`${dashboard?.calls??0} onchain calls`:"Connect to build reputation"}</p>
         </div>
@@ -55,7 +57,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
       </aside>
       <main className="main-content">{children}</main>
       <aside className="right-rail">
-        <div className="rail-heading"><div><span className="live-dot"/> Active Dibs</div><Link href="/dibs">View all</Link></div>
+        <div className="rail-heading"><div><span className="live-dot"/> Your Dibs</div><Link href="/dibs">View all</Link></div>
         <div className="position-list">
           {positions.slice(0,2).map((position)=><Link className="position-card" href={`/market/${position.market.id}`} key={position.market.id}>
             <div className="position-top"><strong>{position.market.author.displayName}</strong><span>#{position.market.rank}</span></div>
