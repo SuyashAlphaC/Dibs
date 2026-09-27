@@ -23,7 +23,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const positions=dashboard?.positions??[];
   return <div className="app-frame">
     <header className="topbar">
-      <Link href="/discover" className="brand" aria-label="Dibs home"><span className="brand-mark">D</span><span>DIBS</span><i>Social conviction</i></Link>
+      <Link href="/discover" className="brand" aria-label="Dibs home"><img className="brand-logo" src="/dibs_logo.png" alt="Dibs"/></Link>
       <nav className="topnav" aria-label="Primary navigation">
         {nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}>{item.label}</Link>)}
       </nav>

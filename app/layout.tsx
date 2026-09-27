@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title: "Dibs — Call culture early",
   description: "Put conviction behind the casts you believe will matter.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL??"https://dibs-metropolis.vercel.app"),
+  icons:{icon:"/dibs_logo.png",apple:"/dibs_logo.png"},
   openGraph:{title:"Dibs — Call culture early",description:"Discover early Farcaster casts and back your signal on Monad.",images:["/dibs-hero.png"]},
   other:{"fc:miniapp":JSON.stringify({version:"1",imageUrl:"https://dibs-metropolis.vercel.app/dibs-hero.png",button:{title:"Call Dibs",action:{type:"launch_miniapp",name:"Dibs",url:"https://dibs-metropolis.vercel.app/discover?miniApp=true",splashImageUrl:"https://dibs-metropolis.vercel.app/dibs-splash.png",splashBackgroundColor:"#08090d"}}})},
 };
