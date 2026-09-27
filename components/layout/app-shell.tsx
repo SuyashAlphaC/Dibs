@@ -23,6 +23,8 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const {dashboard}=useScoutDashboard(identity.address);
   const [markets,setMarkets]=useState<CastMarket[]>([]);
   const shortAddress=identity.address?.match(/^0x[a-fA-F0-9]{40}$/)?`${identity.address.slice(0,6)}…${identity.address.slice(-4)}`:identity.address;
+  const accountName=identity.farcaster?.displayName||identity.farcaster?.username||shortAddress||"Wallet scout";
+  const accountAvatar=identity.farcaster?<Avatar name={accountName} src={identity.farcaster.avatarUrl} size={34}/>:<span className="wallet-avatar-fallback"><Icon name="profile"/></span>;
   const score=dashboard?Math.min(999,Math.round((dashboard.realizedHitRate??0)*8+Math.min(dashboard.calls,199))):0;
   const positions=dashboard?.positions??[];
   useEffect(()=>{
@@ -44,7 +46,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
         <span className="network-live"><i/>Live</span>
         <Link className="icon-button" aria-label="Activity" href="/activity"><Icon name="bell"/></Link>
         <div className="balance"><span>Monad balance</span><strong>{identity.balance?`${identity.balance} MON`:identity.authenticated?"—":"Not connected"}</strong></div>
-        {identity.authenticated&&identity.walletReady ? <button className="avatar-button" onClick={identity.logout} aria-label={`Sign out wallet ${shortAddress}`} title={`${shortAddress} · Sign out`}><Avatar name={identity.address??"Wallet"} size={34}/></button> : <button className="connect-button" onClick={identity.login} disabled={!identity.ready}>{identity.ready?"Connect wallet":"Loading…"}</button>}
+        {identity.authenticated&&identity.walletReady ? <button className="avatar-button" onClick={identity.logout} aria-label={`Sign out ${accountName}`} title={`${accountName} · Sign out`}>{accountAvatar}</button> : <button className="connect-button" onClick={identity.login} disabled={!identity.ready}>{identity.ready?"Connect wallet":"Loading…"}</button>}
       </div>
     </header>
     <div className="app-grid">
@@ -59,7 +61,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
           <p>{identity.authenticated?`${dashboard?.calls??0} onchain calls`:"Connect to build reputation"}</p>
         </div>
         <ScoutAssistant markets={markets}/>
-        <Link className="side-profile" href="/profile"><Avatar name={identity.address??"Guest"} size={38}/><span><strong>{shortAddress??"Guest scout"}</strong><small>{identity.authenticated?identity.chainReady?"Monad Testnet":"Switching network":"Wallet not connected"}</small></span>{identity.authenticated&&<span className="online-dot"/>}</Link>
+        <Link className="side-profile" href="/profile">{identity.farcaster?<Avatar name={accountName} src={identity.farcaster.avatarUrl} size={38}/>:<span className="wallet-avatar-fallback"><Icon name="profile"/></span>}<span><strong>{accountName}</strong><small>{identity.authenticated?identity.chainReady?"Monad Testnet":"Switching network":"Wallet not connected"}</small></span>{identity.authenticated&&<span className="online-dot"/>}</Link>
       </aside>
       <main className="main-content" id="main-content" tabIndex={-1}>{children}<footer className="site-footer"><span>© 2026 Dibs · Social discovery on Monad</span><nav aria-label="Product and trust links"><Link href="/privacy">Privacy</Link><a href="https://github.com/SuyashAlphaC/Dibs" target="_blank" rel="noreferrer">Source</a><a href="https://github.com/SuyashAlphaC/Dibs/issues" target="_blank" rel="noreferrer">Contact</a><a href="/.well-known/security.txt">Security</a></nav></footer></main>
       <aside className="right-rail">
