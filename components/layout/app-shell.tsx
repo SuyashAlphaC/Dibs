@@ -31,6 +31,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
     return()=>controller.abort();
   },[]);
   const topics=Array.from(new Set(markets.map(market=>market.category))).slice(0,7);
+  const momentMarkets=Array.from(new Map(markets.map(market=>[market.author.fid||market.author.username,market])).values());
   return <div className="app-frame">
     <a className="skip-link" href="#main-content">Skip to discovery content</a>
     <header className="topbar">
@@ -64,7 +65,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
       <main className="main-content" id="main-content" tabIndex={-1}>{children}<footer className="site-footer"><span>© 2026 Dibs · Social discovery on Monad</span><nav aria-label="Product and trust links"><Link href="/privacy">Privacy</Link><a href="https://github.com/SuyashAlphaC/Dibs" target="_blank" rel="noreferrer">Source</a><a href="https://github.com/SuyashAlphaC/Dibs/issues" target="_blank" rel="noreferrer">Contact</a><a href="/.well-known/security.txt">Security</a></nav></footer></main>
       <aside className="right-rail">
         <div className="rail-heading"><div>Moments <em>&amp; Signals</em></div><Link href="/discover">View all</Link></div>
-        <div className="moment-row">{markets.slice(0,5).map(market=><Link href={`/market/${market.id}`} key={market.id}><Avatar name={market.author.displayName} src={market.author.avatarUrl} size={38}/><span>{market.author.displayName.split(" ")[0]}</span></Link>)}{!markets.length&&["D","I","B","S"].map(letter=><span className="moment-placeholder" key={letter}>{letter}</span>)}</div>
+        <div className="moment-row" role="list" tabIndex={0} aria-label="Moments from live scouts">{momentMarkets.map(market=><Link role="listitem" aria-label={`Open ${market.author.displayName}'s moment`} title={market.author.displayName} href={`/market/${market.id}`} key={`${market.author.fid}-${market.id}`}><Avatar name={market.author.displayName} src={market.author.avatarUrl} size={38}/><span>{market.author.displayName.split(" ")[0]}</span></Link>)}{!markets.length&&["D","I","B","S"].map(letter=><span className="moment-placeholder" key={letter}>{letter}</span>)}</div>
         <p className="rail-section-label">Trending topics</p>
         <div className="topic-cloud">{(topics.length?topics:["Farcaster","AI","Culture","Crypto","Builders"]).map(topic=><Link href={`/discover?topic=${encodeURIComponent(topic)}`} key={topic}>#{topic.toLowerCase().replaceAll(" ","")}</Link>)}</div>
         <p className="rail-section-label">Closing soon</p>
