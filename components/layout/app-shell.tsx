@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import {usePathname} from "next/navigation";
+import {useEffect,useState} from "react";
 import {useIdentity} from "@/components/identity-provider";
 import {useScoutDashboard} from "@/components/use-scout-dashboard";
 import {Icon} from "@/components/shared/icons";
 import {Avatar} from "@/components/shared/avatar";
+import type {CastMarket} from "@/lib/types";
 
 const nav = [
   {href:"/discover",label:"Discover",icon:"discover" as const},
@@ -18,9 +20,16 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const pathname = usePathname();
   const identity = useIdentity();
   const {dashboard}=useScoutDashboard(identity.address);
+  const [markets,setMarkets]=useState<CastMarket[]>([]);
   const shortAddress=identity.address?.match(/^0x[a-fA-F0-9]{40}$/)?`${identity.address.slice(0,6)}…${identity.address.slice(-4)}`:identity.address;
   const score=dashboard?Math.min(999,Math.round(dashboard.hitRate*8+Math.min(dashboard.calls,199))):0;
   const positions=dashboard?.positions??[];
+  useEffect(()=>{
+    const controller=new AbortController();
+    fetch("/api/casts",{signal:controller.signal}).then(response=>response.json()).then((payload:{casts?:CastMarket[]})=>setMarkets(payload.casts??[])).catch(()=>{});
+    return()=>controller.abort();
+  },[]);
+  const topics=Array.from(new Set(markets.map(market=>market.category))).slice(0,7);
   return <div className="app-frame">
     <header className="topbar">
       <Link href="/discover" className="brand" aria-label="Dibs home"><img className="brand-logo" src="/dibs_logo.png" alt="Dibs"/></Link>
@@ -52,21 +61,13 @@ export function AppShell({children}: {children: React.ReactNode}) {
       </aside>
       <main className="main-content">{children}</main>
       <aside className="right-rail">
-        <div className="rail-heading"><div>Your Dibs</div><Link href="/dibs">View all</Link></div>
-        <div className="allocation-card"><div className="allocation-ring" style={{"--allocation":`${Math.min(86,Math.max(14,(dashboard?.spent??0)*24))}%`} as React.CSSProperties}><span><strong>{(dashboard?.spent??0).toFixed(2)}</strong><small>MON active</small></span></div><div><p className="eyebrow">Conviction allocation</p><strong>{positions.length} active market{positions.length===1?"":"s"}</strong><small>Signals backed on Monad</small></div></div>
-        <p className="rail-section-label">Active markets</p>
-        <div className="position-list">
-          {positions.slice(0,4).map((position,index)=><Link className="position-card" href={`/market/${position.market.id}`} key={position.market.id}>
-            <div className="position-top"><span><Avatar name={position.market.author.displayName} src={position.market.author.avatarUrl} size={26}/><strong>@{position.market.author.username}</strong></span><b>{position.spent.toFixed(2)} MON</b></div>
-            <i><span style={{width:`${Math.max(22,100-index*19)}%`}}/></i>
-          </Link>)}
-          {!positions.length&&<div className="rail-empty"><strong>{identity.authenticated?"No active Dibs yet":"Connect your wallet"}</strong><p>{identity.authenticated?"Your first confirmed signal will appear here.":"See your live positions and rewards."}</p></div>}
-        </div>
-        <div className="rail-summary">
-          <span>Conviction placed</span><strong>{(dashboard?.spent??0).toFixed(3)} MON</strong>
-          <div><span>Rewards claimed</span><b>{(dashboard?.claimed??0).toFixed(3)} MON</b></div>
-        </div>
-        <div className="protocol-note"><Icon name="spark"/><p><strong>Signal, not popularity.</strong><br/>Quality recognized before consensus builds your reputation.</p></div>
+        <div className="rail-heading"><div>Moments <em>&amp; Signals</em></div><Link href="/discover">View all</Link></div>
+        <div className="moment-row">{markets.slice(0,5).map(market=><Link href={`/market/${market.id}`} key={market.id}><Avatar name={market.author.displayName} src={market.author.avatarUrl} size={38}/><span>{market.author.displayName.split(" ")[0]}</span></Link>)}{!markets.length&&["D","I","B","S"].map(letter=><span className="moment-placeholder" key={letter}>{letter}</span>)}</div>
+        <p className="rail-section-label">Trending topics</p>
+        <div className="topic-cloud">{(topics.length?topics:["Farcaster","AI","Culture","Crypto","Builders"]).map(topic=><Link href={`/discover?topic=${encodeURIComponent(topic)}`} key={topic}>#{topic.toLowerCase().replaceAll(" ","")}</Link>)}</div>
+        <p className="rail-section-label">Closing soon</p>
+        <div className="closing-list">{markets.slice().sort((a,b)=>a.timeLeftMinutes-b.timeLeftMinutes).slice(0,2).map(market=><Link href={`/market/${market.id}`} className="closing-card" key={market.id}><span className="status-pill active"><i/>Live</span><strong>{market.author.displayName}</strong><p>{market.text.slice(0,76)}{market.text.length>76?"…":""}</p><small>{market.timeLeftMinutes?`${Math.floor(market.timeLeftMinutes/60)}h ${market.timeLeftMinutes%60}m left`:market.status}</small></Link>)}</div>
+        <div className="rail-summary"><span>Your conviction</span><strong>{(dashboard?.spent??0).toFixed(3)} MON</strong><div><span>Rewards claimed</span><b>{(dashboard?.claimed??0).toFixed(3)} MON</b></div></div>
       </aside>
     </div>
     <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}><Icon name={item.icon}/><span>{item.label}</span></Link>)}</nav>
