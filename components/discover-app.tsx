@@ -9,6 +9,7 @@ import {useIdentity} from "@/components/identity-provider";
 import {markets as seedMarkets} from "@/lib/mock/markets";
 import type {CastMarket} from "@/lib/types";
 import {scoutTransaction} from "@/lib/contract";
+import {MetricCard} from "@/components/dashboard/metric-card";
 
 type ModalState = {market:CastMarket;state:"confirm"|"pending"|"error";error?:string}|null;
 
@@ -39,6 +40,9 @@ export function DiscoverApp() {
     if(mode==="early")return market.status==="active"||market.status==="closing";
     return true;
   }),[marketList,category,mode]);
+  const activeMarkets=marketList.filter(market=>market.status==="active"||market.status==="closing");
+  const totalConviction=marketList.reduce((sum,market)=>sum+market.totalStaked,0);
+  const totalScouts=marketList.reduce((sum,market)=>sum+market.newScouts,0);
 
   useEffect(()=>{
     const controller=new AbortController();
@@ -85,11 +89,17 @@ export function DiscoverApp() {
 
   return <>
     <section className="discover-hero terminal-hero">
-      <div><h1>Discover <span>— Find what&apos;s about to matter.</span></h1><p><i className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Live · Ranked by collective onchain conviction, not opaque algorithms.":"Curated protocol preview · Transactions are disabled."}</p></div>
-      <div className="rpc-chip"><Icon name="spark"/><span>Monad RPC</span><strong>{dataSource==="envio"?"Synced":"Preview"}</strong></div>
+      <div><p className="eyebrow">Live social discovery</p><h1>Discover</h1><h2>Find what&apos;s about to matter.</h2><p><i className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Ranked by collective onchain conviction":"Curated protocol preview · Transactions are disabled"}</p></div>
+      <div className="rpc-chip"><Icon name="spark"/><span>Monad + Envio</span><strong>{dataSource==="envio"?"Synced":"Preview"}</strong></div>
+    </section>
+    <section className="metric-grid">
+      <MetricCard label="Active markets" value={String(activeMarkets.length)} detail="24 hour windows" points={[3,6,5,9,8,12,11,14]} />
+      <MetricCard label="Total conviction" value={`${totalConviction.toFixed(2)} MON`} detail="Across live signals" tone="pink" points={[4,5,4,8,7,11,10,14]} />
+      <MetricCard label="Scouts active" value={String(totalScouts)} detail="Unique early calls" tone="green" points={[3,4,7,6,9,8,11,13]} />
+      <MetricCard label="Your Dibs" value={String(marketList.filter(market=>market.userHasDibs).length)} detail="Confirmed positions" points={[2,2,3,5,4,7,7,9]} />
     </section>
     <section className="feed-controls">
-      <div className="mode-tabs">{["trending","early","opened"].map((item)=><button key={item} className={mode===item?"active":""} onClick={()=>setMode(item)}>{item==="opened"?"Just opened":item==="early"?"⚡ Early (<30m)":"Trending"}</button>)}</div>
+      <div className="mode-tabs">{["trending","early","opened"].map((item)=><button key={item} className={mode===item?"active":""} onClick={()=>setMode(item)}>{item==="opened"?"New":item==="early"?"Early":"All"}</button>)}</div>
       <div className="category-filter">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
     </section>
     <div className="feed-label"><span>{visible.length} signal{visible.length===1?"":"s"}</span><span>{dataSource==="envio"?"Sort · Conviction high to low":"Preview data · staking disabled"}</span></div>

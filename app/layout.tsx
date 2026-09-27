@@ -4,6 +4,7 @@ import "./globals.css";
 import "./avatar.css";
 import "./integration.css";
 import "./stitch.css";
+import "./premium.css";
 import {IdentityProvider} from "@/components/identity-provider";
 import {AppShell} from "@/components/layout/app-shell";
 import {MiniAppReady} from "@/components/mini-app-ready";
