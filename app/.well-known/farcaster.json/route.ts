@@ -1,9 +1,23 @@
 import {NextResponse} from "next/server";
 
+type AccountAssociation={header:string;payload:string;signature:string};
+
+function accountAssociation():AccountAssociation|undefined{
+  const raw=process.env.FARCASTER_ACCOUNT_ASSOCIATION;
+  if(!raw)return undefined;
+  try{
+    const value=JSON.parse(raw) as Partial<AccountAssociation>;
+    if(value.header&&value.payload&&value.signature)return {header:value.header,payload:value.payload,signature:value.signature};
+  }catch{/* Invalid owner-provided data is omitted instead of breaking the manifest. */}
+  return undefined;
+}
+
 export function GET(request:Request){
   const configured=process.env.NEXT_PUBLIC_APP_URL;
   const origin=configured?.replace(/\/$/,"")??new URL(request.url).origin;
+  const association=accountAssociation();
   return NextResponse.json({
+    ...(association?{accountAssociation:association}:{}),
     miniapp:{
       version:"1",
       name:"Dibs",

@@ -8,6 +8,7 @@ import {useScoutDashboard} from "@/components/use-scout-dashboard";
 import {Icon} from "@/components/shared/icons";
 import {Avatar} from "@/components/shared/avatar";
 import type {CastMarket} from "@/lib/types";
+import {ScoutAssistant} from "@/components/scout-assistant";
 
 const nav = [
   {href:"/discover",label:"Discover",icon:"discover" as const},
@@ -56,7 +57,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
           <div className="mini-progress"><i style={{width:`${Math.min(100,score/10)}%`}}/></div>
           <p>{identity.authenticated?`${dashboard?.calls??0} onchain calls`:"Connect to build reputation"}</p>
         </div>
-        <div className="scout-assistant"><span><Icon name="spark"/></span><p className="eyebrow">Scout assistant</p><strong>Find the next early opportunity.</strong><Link href="/discover?mode=early">Explore <Icon name="arrow"/></Link></div>
+        <ScoutAssistant markets={markets}/>
         <Link className="side-profile" href="/profile"><Avatar name={identity.address??"Guest"} size={38}/><span><strong>{shortAddress??"Guest scout"}</strong><small>{identity.authenticated?identity.chainReady?"Monad Testnet":"Switching network":"Wallet not connected"}</small></span>{identity.authenticated&&<span className="online-dot"/>}</Link>
       </aside>
       <main className="main-content">{children}</main>

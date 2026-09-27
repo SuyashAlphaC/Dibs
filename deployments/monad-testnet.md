@@ -56,3 +56,19 @@ and therefore fails closed until the CRE workflow is registered. After deploymen
 with the real workflow ID using `setExpectedWorkflowId(bytes32)`.
 
 - Lock transaction: `0x0b1d773a532c41a39b0c77302c6002de5cee72c9cd7db25a447db05b192809fd`
+
+### Workflow readiness — 2026-09-27
+
+- CRE account: authenticated to organization `org_5KhPGUSaC3kQiPUM`.
+- Monad testnet is supported by CRE and resolves to Keystone Forwarder
+  `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`, matching the receiver.
+- Scoring tests: 3/3 passing.
+- TypeScript: passing.
+- Workflow simulation: passing with result `0` while no market is awaiting a result.
+- Compiled binary hash: `b74267d0de96a54f0fa599781c38d5cb9c374e955b82f2da12857c1249ae50e5`.
+- Config hash: `df0fba1c906b5d7633840818a9fdeb93d2c263611ecacec60bbf2188b4babb91`.
+- Production deployment access: requested through `cre account access`; Chainlink approval is pending.
+
+Do not replace the temporary expected workflow ID until `cre workflow deploy` succeeds and returns
+the registered workflow ID. Keeping the sentinel value makes the receiver fail closed during the
+approval wait.
