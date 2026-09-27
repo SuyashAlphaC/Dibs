@@ -27,7 +27,22 @@ export function ScoutAssistant({markets}:{markets:CastMarket[]}){
   const recommendation=useMemo(()=>eligible.slice().sort((a,b)=>rankMarket(b,mode)-rankMarket(a,mode))[0],[eligible,mode]);
   const reason=mode==="early"?"Best combination of low age and early scout activity.":mode==="closing"?"Strongest conviction among markets nearest to close.":"Highest current momentum and scout velocity.";
   return <>
-    <div className="scout-assistant"><button className="assistant-orb" onClick={()=>setOpen(true)} aria-haspopup="dialog" aria-expanded={open}><Icon name="spark"/></button><p className="eyebrow">Scout assistant</p><strong>Find the next early opportunity.</strong><button className="assistant-open" onClick={()=>setOpen(true)}>Open scan <Icon name="arrow"/></button></div>
+    <aside className="scout-assistant" aria-label="Scout Assistant recommendation">
+      <div className="assistant-rail-head">
+        <button className="assistant-orb" onClick={()=>setOpen(true)} aria-label="Open Scout Assistant" aria-haspopup="dialog" aria-expanded={open}><Icon name="spark"/></button>
+        <div><p className="eyebrow">Scout assistant</p><strong>{recommendation?`${mode} signal`:`Scanning signals`}</strong></div>
+        <span className="assistant-live"><i/>Live</span>
+      </div>
+      {recommendation?<>
+        <Link className="assistant-rail-pick" href={`/market/${recommendation.id}`}>
+          <Avatar name={recommendation.author.displayName} src={recommendation.author.avatarUrl} size={30}/>
+          <span><strong>{recommendation.author.displayName}</strong><small>{Math.floor(recommendation.timeLeftMinutes/60)}h {recommendation.timeLeftMinutes%60}m left · {recommendation.totalStaked.toFixed(3)} MON</small></span>
+          <b>#{recommendation.rank}</b>
+        </Link>
+        <p className="assistant-rail-reason">{recommendation.whyRising||reason}</p>
+        <div className="assistant-rail-actions"><Link href={`/market/${recommendation.id}`}>Inspect pick <Icon name="arrow"/></Link><button onClick={()=>setOpen(true)}>Change scan</button></div>
+      </>:<div className="assistant-rail-empty"><span className="loading-orbit"/><span><strong>Scanning Envio</strong><small>Waiting for a live market signal.</small></span></div>}
+    </aside>
     {open&&<div className="assistant-backdrop" onMouseDown={event=>event.target===event.currentTarget&&setOpen(false)}><section className="assistant-panel" role="dialog" aria-modal="true" aria-labelledby="assistant-title">
       <header><div><p className="eyebrow">Live signal scan</p><h2 id="assistant-title">Scout Assistant</h2></div><button onClick={()=>setOpen(false)} aria-label="Close Scout Assistant"><Icon name="close"/></button></header>
       <p className="assistant-intro">A transparent rules-based scan of live Envio markets. It never stakes or signs for you.</p>
