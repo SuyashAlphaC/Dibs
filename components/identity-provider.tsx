@@ -1,11 +1,18 @@
 "use client";
 
-import {PrivyProvider, usePrivy, useSendTransaction, useWallets} from "@privy-io/react-auth";
+import {PrivyProvider, useLinkAccount, usePrivy, useSendTransaction, useWallets} from "@privy-io/react-auth";
 import {createContext, useCallback, useContext, useEffect, useMemo, useState} from "react";
 import {formatEther} from "viem";
 import {monad, monadClient} from "@/lib/contract";
 
 type Transaction = {to: `0x${string}`; data: `0x${string}`; value: bigint};
+type FarcasterIdentity = {
+  fid: number;
+  username?: string;
+  displayName?: string;
+  avatarUrl?: string;
+  profileUrl?: string;
+};
 type Identity = {
   ready: boolean;
   authenticated: boolean;
@@ -13,8 +20,10 @@ type Identity = {
   chainReady: boolean;
   address?: string;
   balance?: string;
+  farcaster?: FarcasterIdentity;
   mode: "privy" | "demo";
   login: () => void;
+  linkFarcaster: () => void;
   logout: () => void;
   sendStake: (transaction: Transaction | null) => Promise<string>;
 };
@@ -22,13 +31,25 @@ type Identity = {
 const IdentityContext = createContext<Identity | null>(null);
 
 function PrivyIdentity({children}: {children: React.ReactNode}) {
-  const {ready:privyReady, authenticated, login, logout} = usePrivy();
+  const {ready:privyReady, authenticated, login, logout, user} = usePrivy();
   const {ready:walletsReady, wallets} = useWallets();
+  const {linkFarcaster}=useLinkAccount();
   const {sendTransaction} = useSendTransaction();
   // `connectOrCreateWallet` intentionally does not authenticate external wallets.
   // Only expose a wallet after Privy has completed the signed login flow, and
   // prefer the external wallet the scout explicitly connected.
   const wallet=authenticated?(wallets.find(candidate=>candidate.walletClientType!=="privy")??wallets[0]):undefined;
+  const farcasterAccount=user?.linkedAccounts.find(account=>account.type==="farcaster");
+  const farcaster=useMemo<FarcasterIdentity|undefined>(()=>{
+    if(!farcasterAccount?.fid)return undefined;
+    return {
+      fid:farcasterAccount.fid,
+      username:farcasterAccount.username??undefined,
+      displayName:farcasterAccount.displayName??undefined,
+      avatarUrl:farcasterAccount.pfp??undefined,
+      profileUrl:farcasterAccount.url??undefined,
+    };
+  },[farcasterAccount]);
   const [balance,setBalance]=useState<string>();
   const refreshBalance=useCallback(async()=>{
     if(!wallet?.address){setBalance(undefined);return;}
@@ -46,8 +67,10 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
       chainReady: wallet?.chainId===`eip155:${monad.id}`,
       address: wallet?.address,
       balance,
+      farcaster,
       mode: "privy",
       login: () => login(),
+      linkFarcaster,
       logout,
       sendStake: async (transaction) => {
         if (!transaction) throw new Error("Contract address is not configured.");
@@ -63,7 +86,7 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
         return result.hash;
       },
     }),
-    [authenticated, balance, login, logout, privyReady, refreshBalance, sendTransaction, wallet, walletsReady],
+    [authenticated, balance, farcaster, linkFarcaster, login, logout, privyReady, refreshBalance, sendTransaction, wallet, walletsReady],
   );
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>;
 }
@@ -80,6 +103,7 @@ function DemoIdentity({children}: {children: React.ReactNode}) {
       balance:authenticated?"12.4":undefined,
       mode: "demo",
       login: () => setAuthenticated(true),
+      linkFarcaster: () => undefined,
       logout: () => setAuthenticated(false),
       sendStake: async () => {
         await new Promise((resolve) => setTimeout(resolve, 700));

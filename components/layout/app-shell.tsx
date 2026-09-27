@@ -23,7 +23,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const {dashboard}=useScoutDashboard(identity.address);
   const [markets,setMarkets]=useState<CastMarket[]>([]);
   const shortAddress=identity.address?.match(/^0x[a-fA-F0-9]{40}$/)?`${identity.address.slice(0,6)}…${identity.address.slice(-4)}`:identity.address;
-  const score=dashboard?Math.min(999,Math.round(dashboard.hitRate*8+Math.min(dashboard.calls,199))):0;
+  const score=dashboard?Math.min(999,Math.round((dashboard.realizedHitRate??0)*8+Math.min(dashboard.calls,199))):0;
   const positions=dashboard?.positions??[];
   useEffect(()=>{
     const controller=new AbortController();

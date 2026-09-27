@@ -52,6 +52,11 @@ export type ScoutDashboard = {
   withdrawnCredit: number;
   hitRate: number;
   roi: number;
+  resolvedCalls: number;
+  pendingCalls: number;
+  resolvedSuccessfulCalls: number;
+  realizedHitRate: number | null;
+  realizedRoi: number | null;
   averageLeadMinutes: number;
   positions: Array<{
     market: CastMarket;
@@ -283,6 +288,11 @@ export async function getScoutDashboard(scoutAddress: string): Promise<ScoutDash
     withdrawnCredit: 0,
     hitRate: 0,
     roi: 0,
+    resolvedCalls: 0,
+    pendingCalls: 0,
+    resolvedSuccessfulCalls: 0,
+    realizedHitRate: null,
+    realizedRoi: null,
     averageLeadMinutes: 0,
     positions: [],
   };
@@ -314,6 +324,12 @@ export async function getScoutDashboard(scoutAddress: string): Promise<ScoutDash
   const averageLeadMinutes = positions.length
     ? positions.reduce((total, position) => total + position.leadMinutes, 0) / positions.length
     : 0;
+  const resolvedPositions=positions.filter(position=>position.market.status==="settled");
+  const pendingCalls=positions.length-resolvedPositions.length;
+  const resolvedSuccessfulCalls=resolvedPositions.filter(position=>(position.market.scoutAllocation??0)>0).length;
+  const realizedPositions=resolvedPositions.filter(position=>position.claimed>0||(position.market.scoutAllocation??0)<=0);
+  const realizedSpent=realizedPositions.reduce((total,position)=>total+position.spent,0);
+  const realizedReturns=realizedPositions.reduce((total,position)=>total+position.claimed,0);
 
   return {
     calls: scout.calls,
@@ -324,6 +340,11 @@ export async function getScoutDashboard(scoutAddress: string): Promise<ScoutDash
     withdrawnCredit,
     hitRate: scout.calls ? (scout.successfulCalls / scout.calls) * 100 : 0,
     roi: spent ? ((claimed + withdrawnCredit - spent) / spent) * 100 : 0,
+    resolvedCalls: resolvedPositions.length,
+    pendingCalls,
+    resolvedSuccessfulCalls,
+    realizedHitRate: resolvedPositions.length ? (resolvedSuccessfulCalls/resolvedPositions.length)*100 : null,
+    realizedRoi: realizedSpent ? ((realizedReturns-realizedSpent)/realizedSpent)*100 : null,
     averageLeadMinutes,
     positions,
   };
