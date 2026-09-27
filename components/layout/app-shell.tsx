@@ -49,9 +49,8 @@ export function AppShell({children}: {children: React.ReactNode}) {
     </header>
     <div className="app-grid">
       <aside className="left-rail">
-        <div className="mode-switch"><Link className={pathname.startsWith("/discover")?"active":""} href="/discover">Discover</Link><Link className={pathname.startsWith("/dibs")?"active":""} href="/dibs">My Dibs</Link></div>
         <nav className="side-nav" aria-label="App sections">
-          <p className="eyebrow">Navigation</p>
+          <p className="eyebrow">Workspace</p>
           {nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}><Icon name={item.icon}/><span>{item.label}</span></Link>)}
         </nav>
         <div className="reputation-mini">
