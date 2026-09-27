@@ -85,8 +85,8 @@ cd ../oracle && npm test && npm run typecheck
 
 The production keeper is invoked every ten minutes by
 `.github/workflows/market-keeper.yml`. The endpoint rejects requests without the shared bearer
-secret. Farcaster ownership verification still requires the project owner to generate an
-`accountAssociation` for `dibs-metropolis.vercel.app` in Farcaster Developer Tools.
+secret. Farcaster ownership for `dibs-metropolis.vercel.app` is signed by FID `2459338`; the
+association is stored in Vercel and served through the production manifest.
 
 The in-app Scout Assistant is a deterministic, transparent scan over live Envio markets. It can
 rank early, high-momentum, or closing signals, but it never signs or submits a wallet transaction.

@@ -9,6 +9,8 @@
 - Deployment transaction: `0x6ebeb478e4d248bddd9405c91d76b97ccd3a278bc6fc74dfffb823e8e417e113`
 - Receiver deployment transaction: `0xae2b2605bb0f4eda08901fb85ac3def9310b905a48643b34a996e7ff8421014c`
 - Source verification: exact runtime match for both contracts (Monad Sourcify)
+- Farcaster Mini App ownership: FID `2459338`, verified through the production
+  `/.well-known/farcaster.json` account association.
 
 ## Initial epoch
 
