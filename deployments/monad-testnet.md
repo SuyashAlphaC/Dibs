@@ -69,6 +69,20 @@ with the real workflow ID using `setExpectedWorkflowId(bytes32)`.
 - Config hash: `df0fba1c906b5d7633840818a9fdeb93d2c263611ecacec60bbf2188b4babb91`.
 - Production deployment access: requested through `cre account access`; Chainlink approval is pending.
 
+### Hackathon simulation evidence — 2026-09-27
+
+The submission uses CRE simulation while production deploy access is pending. The checked-in
+`simulation-settings` target completed successfully against the explicitly labeled public fixture:
+
+- Result: `1` observation processed.
+- Market: `2`.
+- Quality-growth score: `3800`.
+- Quality gate: `3` interactions accepted, `2` rejected.
+- Report state: `prepared-dry-run` (no production broadcast claimed).
+- Binary hash: `0ded2d257d90635098f513bf49746add2a67d3a88e783bfd616997fc5fe9e5df`.
+- Config hash: `1d9db45337742e3528773ca39f4a50cf436b40e999bb7a9998d8c2ec6d35c5e5`.
+- Evidence: [`oracle/SIMULATION_EVIDENCE.md`](../oracle/SIMULATION_EVIDENCE.md).
+
 Do not replace the temporary expected workflow ID until `cre workflow deploy` succeeds and returns
 the registered workflow ID. Keeping the sentinel value makes the receiver fail closed during the
 approval wait.

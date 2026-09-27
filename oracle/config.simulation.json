@@ -1,0 +1,11 @@
+{
+  "schedule": "0 */15 * * * *",
+  "observationApiUrl": "https://dibs-metropolis.vercel.app/api/oracle/simulation-fixture",
+  "dryRun": true,
+  "evm": {
+    "chainSelectorName": "monad-testnet",
+    "chainId": 10143,
+    "contractAddress": "0x78B87B938cbdd9453F2dA6adA043d74d792C9A81",
+    "isTestnet": true
+  }
+}

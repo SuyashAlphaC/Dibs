@@ -17,6 +17,7 @@ import {scoreObservation, type MarketObservation} from "./scoring.js";
 type Config = {
   schedule: string;
   observationApiUrl: string;
+  dryRun?: boolean;
   evm: {
     chainSelectorName: string;
     chainId: number;
@@ -83,14 +84,16 @@ function settleReadyMarkets(runtime: Runtime<Config>) {
       [BigInt(runtime.config.evm.chainId), settlementCalldata],
     );
     const report = runtime.report(prepareReportRequest(reportPayload)).result();
-    evm
-      .writeReport(runtime, {
-        receiver: hexToBase64(runtime.config.evm.contractAddress),
-        report,
-      })
-      .result();
+    if (!runtime.config.dryRun) {
+      evm
+        .writeReport(runtime, {
+          receiver: hexToBase64(runtime.config.evm.contractAddress),
+          report,
+        })
+        .result();
+    }
     runtime.log(
-      `market=${result.marketId} action=${observation.action??"submit"} score=${result.qualityGrowthScore} upheld=${upheld} accepted=${result.acceptedInteractions} rejected=${result.rejectedInteractions}`,
+      `market=${result.marketId} action=${observation.action??"submit"} score=${result.qualityGrowthScore} upheld=${upheld} accepted=${result.acceptedInteractions} rejected=${result.rejectedInteractions} report=${runtime.config.dryRun?"prepared-dry-run":"submitted"}`,
     );
   }
 

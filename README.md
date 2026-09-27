@@ -80,7 +80,7 @@ cd ../oracle && npm test && npm run typecheck
 3. Configure `MARKET_OPENER_PRIVATE_KEY` and `CRON_SECRET`; the protected keeper creates exact 24-hour epochs and opens only casts younger than 30 minutes with fewer than 25 interactions.
 4. Put the Dibs deployment address and block in `indexer/config.yaml`, deploy the indexer, and expose its GraphQL URL to the frontend.
 5. Configure Privy, Neynar, and transaction sponsorship.
-6. Put the **receiver address** in `oracle/config.testnet.json`, simulate and deploy the workflow, then call `setExpectedWorkflowId(bytes32)` on the receiver with its deployed workflow ID before broadcasting production reports. The workflow is simulation-ready; production registration currently awaits Chainlink organization deploy-access approval.
+6. Put the **receiver address** in `oracle/config.testnet.json`. For the hackathon submission, run the reproducible `simulation-settings` target documented in `oracle/SIMULATION_EVIDENCE.md`. Production registration still awaits Chainlink organization deploy-access approval; only after deployment should the receiver be pinned to the returned workflow ID.
 7. Rehearse one normal settlement and one challenged/bot-filtered settlement before recording the demo.
 
 The production keeper is invoked every ten minutes by
