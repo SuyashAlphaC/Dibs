@@ -15,7 +15,10 @@ type IndexedMarket = {
   scoutCount: number;
   qualityGrowthScore: string;
   evidenceHash?: string;
+  resultSubmittedAt?: string;
   status: "OPEN" | "PENDING" | "CHALLENGED" | "SETTLED";
+  challenged: boolean;
+  challengeUpheld?: boolean;
   scoutAllocation: string;
   creatorAllocation: string;
 };
@@ -65,6 +68,8 @@ export type SettlementMarket = {
   baselineEngagement: number;
   openedAt: number;
   closesAt: number;
+  action: "submit" | "resolve";
+  previousQualityGrowthScore: number;
 };
 
 type NeynarCast = {
@@ -84,8 +89,8 @@ type NeynarCast = {
 
 const MARKET_FIELDS = `
   id epochId castHash creator baselineEngagement openedAt closesAt seedStake
-  totalStake totalUnits scoutCount qualityGrowthScore evidenceHash status
-  scoutAllocation creatorAllocation
+  totalStake totalUnits scoutCount qualityGrowthScore evidenceHash resultSubmittedAt status
+  challenged challengeUpheld scoutAllocation creatorAllocation
 `;
 
 function endpoint() {
@@ -142,6 +147,7 @@ function statusOf(status: IndexedMarket["status"], closesAt: number): MarketStat
   if (status === "SETTLED") return "settled";
   if (status === "CHALLENGED") return "challenged";
   if (status === "PENDING") return "closed";
+  if (closesAt * 1000 <= Date.now()) return "closed";
   return closesAt * 1000 - Date.now() <= 60 * 60_000 ? "closing" : "active";
 }
 
@@ -174,7 +180,9 @@ async function toCastMarket(
 
   return {
     id: market.id,
+    epochId: market.epochId,
     hash: cast.hash as `0x${string}`,
+    creator: market.creator,
     author: {
       fid: cast.author.fid,
       username: cast.author.username,
@@ -209,6 +217,11 @@ async function toCastMarket(
     potentialReward: status === "settled" ? allocation : 0,
     userHasDibs: ownedMarketIds.has(market.id),
     settlementScore: status === "settled" ? qualityScore : undefined,
+    baselineEngagement: Number(market.baselineEngagement),
+    resultSubmittedAt: market.resultSubmittedAt ? Number(market.resultSubmittedAt) : undefined,
+    challengeUpheld: market.challengeUpheld,
+    scoutAllocation: mon(market.scoutAllocation),
+    creatorAllocation: mon(market.creatorAllocation),
   };
 }
 
@@ -319,16 +332,18 @@ export async function getScoutDashboard(scoutAddress: string): Promise<ScoutDash
 export async function getMarketsAwaitingResult(): Promise<SettlementMarket[] | null> {
   const data = await queryEnvio<{Market: IndexedMarket[]}>(
     `query MarketsAwaitingResult {
-      Market(where: {status: {_eq: OPEN}}, order_by: {closesAt: asc}) { ${MARKET_FIELDS} }
+      Market(where: {status: {_in: [OPEN, CHALLENGED]}}, order_by: {closesAt: asc}) { ${MARKET_FIELDS} }
     }`,
   );
   if (!data) return null;
   const now = Math.floor(Date.now() / 1000);
-  return data.Market.filter((market) => Number(market.closesAt) <= now).map((market) => ({
+  return data.Market.filter((market) => market.status === "CHALLENGED" || Number(market.closesAt) <= now).map((market) => ({
     marketId: Number(market.id),
     castHash: market.castHash as `0x${string}`,
     baselineEngagement: Number(market.baselineEngagement),
     openedAt: Number(market.openedAt),
     closesAt: Number(market.closesAt),
+    action: market.status === "CHALLENGED" ? "resolve" : "submit",
+    previousQualityGrowthScore: Number(market.qualityGrowthScore),
   }));
 }

@@ -3,6 +3,7 @@ import {notFound} from "next/navigation";
 import {Avatar} from "@/components/shared/avatar";
 import {findMarket} from "@/lib/mock/markets";
 import {getLiveMarket} from "@/lib/live-markets";
+import {LifecycleActions} from "@/components/market/lifecycle-actions";
 
 export default async function SettlementPage({params}:{params:Promise<{marketId:string}>}){
   const {marketId}=await params;const market=(await getLiveMarket(marketId))??findMarket(marketId);if(!market)notFound();
@@ -17,5 +18,6 @@ export default async function SettlementPage({params}:{params:Promise<{marketId:
       <aside className="settlement-ledger"><p className="eyebrow">Settlement ledger</p><div><span>Status</span><strong>{settled?"Final":"Observing"}</strong></div><div><span>Conviction</span><strong>{market.totalUnits} units</strong></div><div><span>Scout wallets</span><strong>{market.newScouts}</strong></div><div><span>Market rank</span><strong>#{market.rank}</strong></div>{settled&&<div className="score-readout"><span>Quality score</span><strong>{qualityScore}</strong><i style={{width:`${Math.min(100,qualityScore)}%`}}/></div>}</aside>
     </section>
     <section className={`reward-card ${settled?"":"pending"}`}><div><p className="eyebrow">Protocol outcome</p><h2>{settled?"Allocation recorded.":"Rewards remain locked."}</h2><p>{settled?"Eligible scouts can claim their proportional share directly from the Dibs contract.":"The contract unlocks allocations only after a valid quality report settles this market."}</p></div><div><span>{settled?"Total allocation":"Projected allocation"}</span><strong>{market.potentialReward.toFixed(3)} MON</strong><small>Scout and creator pools</small></div></section>
+    <LifecycleActions market={market}/>
   </div>;
 }

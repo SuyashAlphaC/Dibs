@@ -1,0 +1,27 @@
+name: Dibs market keeper
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dibs-market-keeper
+  cancel-in-progress: false
+
+jobs:
+  maintain-and-open:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Advance lifecycle and open eligible markets
+        env:
+          DIBS_CRON_SECRET: ${{ secrets.DIBS_CRON_SECRET }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${DIBS_CRON_SECRET}" \
+            https://dibs-metropolis.vercel.app/api/markets/open

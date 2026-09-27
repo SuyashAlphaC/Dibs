@@ -47,6 +47,8 @@ async function observeMarket(market:SettlementMarket,apiKey:string){
     baselineQualifiedScore:market.baselineEngagement*1_000,
     observedAt,
     interactions:[...reactions,...replies],
+    action:market.action,
+    previousQualityGrowthScore:market.previousQualityGrowthScore,
   };
 }
 

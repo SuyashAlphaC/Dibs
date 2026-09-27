@@ -25,7 +25,8 @@ type Config = {
   };
 };
 
-type ObservationEnvelope = {observations: MarketObservation[]};
+type WorkflowObservation = MarketObservation & {action?: "submit" | "resolve";previousQualityGrowthScore?: number};
+type ObservationEnvelope = {observations: WorkflowObservation[]};
 
 const submitResultAbi = [
   {
@@ -40,6 +41,11 @@ const submitResultAbi = [
     outputs: [],
   },
 ] as const;
+
+const resolveChallengeAbi=[{
+  type:"function",name:"resolveChallenge",stateMutability:"nonpayable",
+  inputs:[{name:"marketId",type:"uint256"},{name:"correctedScore",type:"uint256"},{name:"correctedEvidenceHash",type:"bytes32"},{name:"upheld",type:"bool"}],outputs:[],
+}] as const;
 
 function fetchObservationJson(requester: HTTPSendRequester, config: Config) {
   const response = requester
@@ -68,11 +74,10 @@ function settleReadyMarkets(runtime: Runtime<Config>) {
 
   for (const observation of envelope.observations) {
     const result = scoreObservation(observation);
-    const settlementCalldata = encodeFunctionData({
-      abi: submitResultAbi,
-      functionName: "submitResult",
-      args: [BigInt(result.marketId), result.qualityGrowthScore, result.evidenceHash],
-    });
+    const upheld=observation.action==="resolve"&&result.qualityGrowthScore<BigInt(observation.previousQualityGrowthScore??0);
+    const settlementCalldata=observation.action==="resolve"
+      ?encodeFunctionData({abi:resolveChallengeAbi,functionName:"resolveChallenge",args:[BigInt(result.marketId),result.qualityGrowthScore,result.evidenceHash,upheld]})
+      :encodeFunctionData({abi:submitResultAbi,functionName:"submitResult",args:[BigInt(result.marketId),result.qualityGrowthScore,result.evidenceHash]});
     const reportPayload = encodeAbiParameters(
       [{type: "uint256", name: "targetChainId"}, {type: "bytes", name: "settlementCalldata"}],
       [BigInt(runtime.config.evm.chainId), settlementCalldata],
@@ -85,7 +90,7 @@ function settleReadyMarkets(runtime: Runtime<Config>) {
       })
       .result();
     runtime.log(
-      `market=${result.marketId} score=${result.qualityGrowthScore} accepted=${result.acceptedInteractions} rejected=${result.rejectedInteractions}`,
+      `market=${result.marketId} action=${observation.action??"submit"} score=${result.qualityGrowthScore} upheld=${upheld} accepted=${result.acceptedInteractions} rejected=${result.rejectedInteractions}`,
     );
   }
 

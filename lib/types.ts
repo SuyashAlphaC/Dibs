@@ -9,7 +9,9 @@ export interface CastAuthor {
 
 export interface CastMarket {
   id: string;
+  epochId?: string;
   hash: `0x${string}`;
+  creator?: string;
   author: CastAuthor;
   text: string;
   timestamp: string;
@@ -33,6 +35,11 @@ export interface CastMarket {
   userHasDibs?: boolean;
   userStake?: number;
   settlementScore?: number;
+  baselineEngagement?: number;
+  resultSubmittedAt?: number;
+  challengeUpheld?: boolean;
+  scoutAllocation?: number;
+  creatorAllocation?: number;
 }
 
 export interface ScoutPosition {

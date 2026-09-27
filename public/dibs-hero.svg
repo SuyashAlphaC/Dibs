@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs><radialGradient id="a" cx=".72" cy=".18" r=".8"><stop stop-color="#6d28d9" stop-opacity=".68"/><stop offset="1" stop-color="#08090d"/></radialGradient></defs>
+  <rect width="1200" height="630" fill="#08090d"/><rect width="1200" height="630" fill="url(#a)"/>
+  <text x="82" y="145" fill="#a78bfa" font-family="monospace" font-size="24" letter-spacing="6">MONAD METROPOLIS</text>
+  <text x="78" y="330" fill="#fff" font-family="Arial,sans-serif" font-size="132" font-weight="700">DIBS</text>
+  <text x="84" y="408" fill="#c7c8d0" font-family="Arial,sans-serif" font-size="42">Call culture before consensus.</text>
+  <path d="M82 495H1118" stroke="#8b5cf6" stroke-width="3"/><circle cx="1010" cy="495" r="13" fill="#42d392"/>
+</svg>

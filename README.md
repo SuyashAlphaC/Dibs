@@ -4,13 +4,15 @@
 
 ## What is implemented
 
-- Responsive Next.js feed, market action, and scout-ledger demo.
+- Responsive Next.js feed, market action, settlement console, and scout ledger.
 - Privy Farcaster/email/passkey authentication and embedded-wallet transaction path.
 - Neynar-backed early-cast API with an offline demo fallback.
 - Native-MON Solidity contract with bounded epochs, linear conviction curves, sponsor funding, permissioned market opening, oracle results, evidence hashes, bonded challenges, per-market payout caps, creator rewards, and pull-based claims.
 - Envio indexer for epochs, markets, positions, timeouts, allocations, settlements, and scout reputation; the feed polls indexed stake totals for live ranking.
-- Chainlink CRE workflow for observation consensus, deterministic quality scoring, evidence hashing, and Monad settlement reports.
+- Chainlink CRE workflow for observation consensus, deterministic quality scoring, evidence hashing, Monad settlement reports, and secondary challenge review.
 - ERC-165 CRE settlement receiver with Keystone Forwarder authentication, optional workflow-ID pinning, chain-bound reports, and a strict settlement-function allowlist.
+- Authenticated market keeper that discovers eligible Neynar casts, creates exact 24-hour epochs, opens seeded markets, expires missed reports/challenges, and finalizes ready epochs.
+- Farcaster Mini App SDK bootstrap, hosted manifest, launch metadata, and compliant icon/splash/social assets.
 
 This is hackathon software and has not been audited. Do not use it with production funds.
 
@@ -22,7 +24,7 @@ This is hackathon software and has not been audited. Do not use it with producti
 - CRE receiver: `0x78B87B938cbdd9453F2dA6adA043d74d792C9A81`
 - CRE forwarder: `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`
 - Deployment block: `65900523`
-- Initial epoch: `1`, funded with `1 MON`
+- Compliant live epoch: `2`, exactly 24 hours, funded with `1 MON`, three eligible markets
 
 Transaction hashes and the receiver's current fail-closed CRE state are recorded in
 [`deployments/monad-testnet.md`](deployments/monad-testnet.md).
@@ -75,8 +77,13 @@ cd ../oracle && npm test && npm run typecheck
 
 1. Set `CRE_FORWARDER_ADDRESS` to the official forwarder for the target Monad network. Confirm the address for your CRE tenant with `cre workflow supported-chains --output json`.
 2. Run `contracts/script/Deploy.s.sol`. It deploys Dibs, deploys `DibsSettlementReceiver`, and makes the receiver Dibs' oracle atomically in one broadcast.
-3. Create and seed the first epoch; authorize the server market-opener address.
+3. Configure `MARKET_OPENER_PRIVATE_KEY` and `CRON_SECRET`; the protected keeper creates exact 24-hour epochs and opens only casts younger than 30 minutes with fewer than 25 interactions.
 4. Put the Dibs deployment address and block in `indexer/config.yaml`, deploy the indexer, and expose its GraphQL URL to the frontend.
 5. Configure Privy, Neynar, and transaction sponsorship.
 6. Put the **receiver address** in `oracle/config.staging.json`, simulate and deploy the workflow, then call `setExpectedWorkflowId(bytes32)` on the receiver with its deployed workflow ID before broadcasting production reports.
 7. Rehearse one normal settlement and one challenged/bot-filtered settlement before recording the demo.
+
+The production keeper is invoked every ten minutes by
+`.github/workflows/market-keeper.yml`. The endpoint rejects requests without the shared bearer
+secret. Farcaster ownership verification still requires the project owner to generate an
+`accountAssociation` for `dibs-metropolis.vercel.app` in Farcaster Developer Tools.

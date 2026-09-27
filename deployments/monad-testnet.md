@@ -28,6 +28,26 @@
 - Block: `65922439`
 - Transaction: `0xe94b53cafc4b2b9c4f0970d36c5e6dba16ef8c4d452434ba0a650d9265fe1912`
 
+## Compliant 24-hour epoch
+
+- Epoch: `2`
+- Opens: `2026-09-27 07:10:18 UTC`
+- Closes: `2026-09-28 07:10:18 UTC`
+- Reward pool at creation: `1 MON`
+- Creation transaction: `0xe513bceeb4a6e3b96647a1d87cdadc07d08d50fe2408eb7e325eaae3e25a6478`
+
+All casts below were opened while younger than 30 minutes and below 25 interactions. Each
+received the configured `0.002 MON` community seed.
+
+| Market | Cast | Opening transaction |
+|---:|---|---|
+| 2 | `0x3e3481042393bdb0fb8549978e0ccb120e79c401` | `0x98aab32e8abcc71a5225752a74040872016e7f472ceb80ce70ab3625fb9b4c33` |
+| 3 | `0xaff95fb8cc8dd1b979e2b58f523185c353e0b059` | `0x74b8ffc860cd618b3c13264f551d3f272751affde4d431b45590f8e2a0ae4fda` |
+| 4 | `0x58cea065a5346d576d69f3a6577eedd3b2bfe0e1` | `0x5170e286c199baaed275333033ed7b048e1ce594958b126632fcc3e98f9f7c08` |
+
+The production market keeper runs every ten minutes through GitHub Actions and advances oracle
+timeouts, challenge timeouts, and epoch finalization in addition to opening eligible markets.
+
 ## CRE safety state
 
 The receiver is temporarily pinned to
