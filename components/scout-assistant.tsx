@@ -42,11 +42,11 @@ export function ScoutAssistant({markets}:{markets:CastMarket[]}){
       {recommendation?<>
         <Link className="assistant-rail-pick" href={`/market/${recommendation.id}`}>
           <Avatar name={recommendation.author.displayName} src={recommendation.author.avatarUrl} size={30}/>
-          <span><strong>{recommendation.author.displayName}</strong><small>{Math.floor(recommendation.timeLeftMinutes/60)}h {recommendation.timeLeftMinutes%60}m left · {recommendation.totalStaked.toFixed(3)} MON</small></span>
+          <span><strong>{recommendation.author.displayName}</strong><small>{recommendation.timeLeftMinutes>=60?`${Math.floor(recommendation.timeLeftMinutes/60)}h left`:`${recommendation.timeLeftMinutes}m left`}</small></span>
           <b>#{recommendation.rank}</b>
         </Link>
-        <p className="assistant-rail-reason">{recommendation.whyRising||reason}</p>
-        <div className="assistant-rail-actions"><Link href={`/market/${recommendation.id}`}>Inspect pick <Icon name="arrow"/></Link><button onClick={()=>setOpen(true)}>Change scan</button></div>
+        <p className="assistant-rail-reason"><strong>{recommendation.newScouts} {recommendation.newScouts===1?"scout":"scouts"}</strong><span>{recommendation.totalStaked.toFixed(3)} MON committed</span></p>
+        <div className="assistant-rail-actions"><Link href={`/market/${recommendation.id}`}>Open signal <Icon name="arrow"/></Link><button onClick={()=>setOpen(true)}>Rescan</button></div>
       </>:<div className="assistant-rail-empty"><span className="loading-orbit"/><span><strong>Scanning Envio</strong><small>Waiting for a live market signal.</small></span></div>}
     </aside>
     {open&&typeof document!=="undefined"&&createPortal(<div className="assistant-backdrop" onMouseDown={event=>event.target===event.currentTarget&&setOpen(false)}><section className="assistant-panel" role="dialog" aria-modal="true" aria-labelledby="assistant-title">

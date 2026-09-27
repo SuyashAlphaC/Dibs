@@ -39,3 +39,27 @@ body{font-size:15px}.topnav a,.side-nav a{font-size:12px}.mode-switch a,.header-
 /* Crawlability, trust and keyboard-accessibility layer. */
 .skip-link{position:fixed;left:18px;top:-60px;z-index:200;padding:10px 14px;border-radius:8px;background:var(--lime);color:#17191d;font-weight:750;transition:top .18s ease}.skip-link:focus{top:14px}.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}.terminal-hero h1{max-width:680px}.discovery-explainer{max-width:720px;margin:22px auto 0;padding:20px;border-radius:13px;background:#25272f}.discovery-explainer h2{margin:5px 0 8px;font-size:18px}.discovery-explainer>p:not(.eyebrow){max-width:68ch;color:#b8bac0;font-size:11px;line-height:1.6}.discovery-explainer ol{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:17px 0;padding:0;list-style:none;counter-reset:steps}.discovery-explainer li{counter-increment:steps;padding:12px;border-radius:9px;background:#202229}.discovery-explainer li:before{content:"0" counter(steps);display:block;margin-bottom:8px;color:var(--lime);font-size:9px;font-weight:750}.discovery-explainer li strong,.discovery-explainer li span{display:block}.discovery-explainer li strong{font-size:10px}.discovery-explainer li span{margin-top:4px;color:#92949b;font-size:9px;line-height:1.45}.protocol-sources{display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid var(--social-line);font-size:9px}.protocol-sources span{margin-right:auto;color:#85878f}.protocol-sources a{color:#c8c9cd}.protocol-sources a:hover{color:var(--lime)}.site-footer{display:flex;align-items:center;justify-content:space-between;max-width:720px;margin:22px auto 0;padding:14px 2px 2px;border-top:1px solid var(--social-line);color:#777981;font-size:8px}.site-footer nav{display:flex;gap:12px}.site-footer a:hover{color:var(--lime)}.legal-page{max-width:720px;margin:0 auto;padding:8px 0 40px}.legal-page h1{margin:5px 0 6px;font-size:31px}.legal-page h2{margin:24px 0 6px;font-size:16px}.legal-page p{max-width:70ch;color:#b7b8be;font-size:12px;line-height:1.65}.legal-page a{color:var(--lime);text-decoration:underline;text-underline-offset:3px}
 @media(max-width:767px){.terminal-hero h1{font-size:26px}.discovery-explainer{padding:16px}.discovery-explainer ol{grid-template-columns:1fr}.protocol-sources,.site-footer{align-items:flex-start;flex-wrap:wrap}.site-footer{gap:9px}.legal-page{padding-inline:4px}.legal-page h1{font-size:27px}}
+
+/* Compact sidebar rhythm and recommendation hierarchy. */
+.left-rail{padding:18px 14px 14px}
+.side-nav .eyebrow{margin:0 12px 10px}
+.side-nav a{height:38px;margin-bottom:3px;padding-inline:12px;border-radius:10px}
+.side-nav a:focus-visible{outline-color:var(--lime);outline-offset:2px}
+.reputation-mini{margin-top:16px;padding:12px 13px;border:1px solid var(--social-line);border-radius:12px}
+.reputation-mini .eyebrow{line-height:1.45}
+.reputation-mini>div{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.scout-assistant{margin-top:auto;padding:12px 0 0}
+.assistant-rail-head{gap:9px;padding-inline:1px}
+.assistant-rail-head>div{display:grid;gap:1px}
+.assistant-rail-head .eyebrow{font-size:8px;white-space:nowrap}
+.assistant-rail-head strong{margin:0;line-height:1.2}
+.assistant-rail-pick{grid-template-columns:30px minmax(0,1fr) auto;min-height:54px;margin-top:10px;padding:9px}
+.assistant-rail-pick>span{gap:2px}
+.assistant-rail-pick strong{font-size:9.5px;line-height:1.25;text-transform:none}
+.assistant-rail-pick small{font-size:7.5px;line-height:1.3;text-transform:uppercase;letter-spacing:.025em}
+.assistant-rail-pick b{position:static;align-self:start}
+.assistant-rail-reason{display:flex;margin:8px 2px;justify-content:space-between;gap:6px;color:#8f9199;font-size:8px;line-height:1.3}
+.assistant-rail-reason strong{flex:none;color:#c7c8cd;font-size:8px}
+.assistant-rail-reason span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.assistant-rail-actions{grid-template-columns:1fr 1fr;gap:6px}
+.assistant-rail-actions a,.assistant-rail-actions button{min-width:0;min-height:34px;padding:0 7px;font-size:8px;line-height:1.15;white-space:nowrap}
