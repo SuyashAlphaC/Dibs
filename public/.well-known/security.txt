@@ -1,0 +1,5 @@
+Contact: https://github.com/SuyashAlphaC/Dibs/security/advisories/new
+Canonical: https://dibs-metropolis.vercel.app/.well-known/security.txt
+Policy: https://github.com/SuyashAlphaC/Dibs/security/policy
+Preferred-Languages: en
+Expires: 2027-12-31T23:59:59.000Z

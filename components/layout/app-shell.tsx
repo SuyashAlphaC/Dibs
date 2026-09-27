@@ -32,17 +32,18 @@ export function AppShell({children}: {children: React.ReactNode}) {
   },[]);
   const topics=Array.from(new Set(markets.map(market=>market.category))).slice(0,7);
   return <div className="app-frame">
+    <a className="skip-link" href="#main-content">Skip to discovery content</a>
     <header className="topbar">
-      <Link href="/discover" className="brand" aria-label="Dibs home"><img className="brand-logo" src="/dibs_logo.png" alt="Dibs"/></Link>
+      <Link href="/discover" className="brand" aria-label="Dibs home"><img className="brand-logo" src="/dibs_logo.png" alt="Dibs Farcaster discovery" width="92" height="54" decoding="async" fetchPriority="high"/></Link>
       <nav className="topnav" aria-label="Primary navigation">
         {nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}>{item.label}</Link>)}
       </nav>
       <div className="topbar-actions">
-        <label className="header-search"><Icon name="discover"/><input aria-label="Search casts and scouts" placeholder="Search casts, scouts…"/></label>
+        <label className="header-search"><Icon name="discover"/><input type="search" autoComplete="off" aria-label="Search casts and scouts" placeholder="Search casts, scouts…"/></label>
         <span className="network-live"><i/>Live</span>
         <Link className="icon-button" aria-label="Activity" href="/activity"><Icon name="bell"/></Link>
         <div className="balance"><span>Monad balance</span><strong>{identity.balance?`${identity.balance} MON`:identity.authenticated?"—":"Not connected"}</strong></div>
-        {identity.authenticated&&identity.walletReady ? <button className="avatar-button" onClick={identity.logout} title={`${shortAddress} · Sign out`}><Avatar name={identity.address??"Wallet"} size={34}/></button> : <button className="connect-button" onClick={identity.login} disabled={!identity.ready}>{identity.ready?"Connect wallet":"Loading…"}</button>}
+        {identity.authenticated&&identity.walletReady ? <button className="avatar-button" onClick={identity.logout} aria-label={`Sign out wallet ${shortAddress}`} title={`${shortAddress} · Sign out`}><Avatar name={identity.address??"Wallet"} size={34}/></button> : <button className="connect-button" onClick={identity.login} disabled={!identity.ready}>{identity.ready?"Connect wallet":"Loading…"}</button>}
       </div>
     </header>
     <div className="app-grid">
@@ -60,7 +61,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
         <ScoutAssistant markets={markets}/>
         <Link className="side-profile" href="/profile"><Avatar name={identity.address??"Guest"} size={38}/><span><strong>{shortAddress??"Guest scout"}</strong><small>{identity.authenticated?identity.chainReady?"Monad Testnet":"Switching network":"Wallet not connected"}</small></span>{identity.authenticated&&<span className="online-dot"/>}</Link>
       </aside>
-      <main className="main-content">{children}</main>
+      <main className="main-content" id="main-content" tabIndex={-1}>{children}<footer className="site-footer"><span>© 2026 Dibs · Social discovery on Monad</span><nav aria-label="Product and trust links"><Link href="/privacy">Privacy</Link><a href="https://github.com/SuyashAlphaC/Dibs" target="_blank" rel="noreferrer">Source</a><a href="https://github.com/SuyashAlphaC/Dibs/issues" target="_blank" rel="noreferrer">Contact</a><a href="/.well-known/security.txt">Security</a></nav></footer></main>
       <aside className="right-rail">
         <div className="rail-heading"><div>Moments <em>&amp; Signals</em></div><Link href="/discover">View all</Link></div>
         <div className="moment-row">{markets.slice(0,5).map(market=><Link href={`/market/${market.id}`} key={market.id}><Avatar name={market.author.displayName} src={market.author.avatarUrl} size={38}/><span>{market.author.displayName.split(" ")[0]}</span></Link>)}{!markets.length&&["D","I","B","S"].map(letter=><span className="moment-placeholder" key={letter}>{letter}</span>)}</div>

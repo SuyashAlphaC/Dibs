@@ -103,7 +103,7 @@ export function IdentityProvider({children}: {children: React.ReactNode}) {
         embeddedWallets: {ethereum: {createOnLogin: "users-without-wallets"}},
         defaultChain: monad,
         supportedChains: [monad],
-        appearance: {theme: "dark", accentColor: "#8B5CF6", logo: "/dibs_logo.png"},
+        appearance: {theme: "dark", accentColor: "#8B5CF6"},
       }}
     >
       <PrivyIdentity>{children}</PrivyIdentity>

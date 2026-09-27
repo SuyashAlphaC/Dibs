@@ -1,7 +1,6 @@
 "use client";
 
 import {useEffect,useMemo,useState} from "react";
-import {useSearchParams} from "next/navigation";
 import {CastMarketCard} from "@/components/feed/cast-market-card";
 import {Icon} from "@/components/shared/icons";
 import {Avatar} from "@/components/shared/avatar";
@@ -22,10 +21,8 @@ function transactionMessage(error:unknown){
   return "The transaction did not confirm. Nothing was recorded by Dibs.";
 }
 
-export function DiscoverApp() {
-  const params = useSearchParams();
+export function DiscoverApp({initialMode="trending"}:{initialMode?:string}) {
   const identity = useIdentity();
-  const initialMode = params.get("mode") || "trending";
   const [mode,setMode] = useState(initialMode);
   const [category,setCategory] = useState("All");
   const [marketList,setMarketList] = useState(seedMarkets);
@@ -89,7 +86,7 @@ export function DiscoverApp() {
 
   return <>
     <section className="discover-hero terminal-hero">
-      <div><p className="eyebrow">Live social discovery</p><h1>Discover</h1><h2>Find what&apos;s about to matter.</h2><p><i className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Ranked by collective onchain conviction":"Curated protocol preview · Transactions are disabled"}</p></div>
+      <div><p className="eyebrow">Live social discovery</p><h1>Farcaster Discovery for Early Casts</h1><h2>Find what&apos;s about to matter before it trends.</h2><p><i className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Live casts ranked by collective onchain conviction":"Curated protocol preview · Transactions are disabled"}</p></div>
       <div className="rpc-chip"><Icon name="spark"/><span>Monad + Envio</span><strong>{dataSource==="envio"?"Synced":"Preview"}</strong></div>
     </section>
     <section className="metric-grid">
@@ -103,7 +100,13 @@ export function DiscoverApp() {
       <div className="category-filter">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
     </section>
     <div className="feed-label"><span>{visible.length} signal{visible.length===1?"":"s"}</span><span>{dataSource==="envio"?"Sort · Conviction high to low":"Preview data · staking disabled"}</span></div>
-    <section className="market-feed">{visible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
+    <section className="market-feed" aria-labelledby="live-markets-title"><h2 className="sr-only" id="live-markets-title">Live Farcaster discovery markets</h2>{visible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
+    <section className="discovery-explainer" aria-labelledby="how-dibs-works">
+      <p className="eyebrow">Transparent discovery</p><h2 id="how-dibs-works">How does Dibs find early Farcaster signals?</h2>
+      <p>Dibs turns early social discovery into an accountable onchain signal. Scouts back promising casts with MON, collective conviction determines discovery rank, and quality-weighted engagement settles each market.</p>
+      <ol><li><strong>Discover early.</strong><span>Envio indexes eligible Farcaster casts and live Monad markets.</span></li><li><strong>Call Dibs.</strong><span>A wallet-confirmed stake records conviction without taking custody of your wallet.</span></li><li><strong>Build reputation.</strong><span>Chainlink CRE settlement rewards accurate early calls using quality-filtered growth.</span></li></ol>
+      <div className="protocol-sources"><span>Protocol sources</span><a href="https://docs.monad.xyz/" target="_blank" rel="noreferrer">Monad</a><a href="https://docs.envio.dev/" target="_blank" rel="noreferrer">Envio</a><a href="https://docs.chain.link/cre" target="_blank" rel="noreferrer">Chainlink CRE</a><a href="https://miniapps.farcaster.xyz/" target="_blank" rel="noreferrer">Farcaster</a></div>
+    </section>
     {modal&&<div className="modal-backdrop" role="presentation" onMouseDown={(event)=>event.target===event.currentTarget&&setModal(null)}><section className="dibs-modal" role="dialog" aria-modal="true" aria-labelledby="dibs-title">
       <button className="modal-close" onClick={()=>setModal(null)} aria-label="Close"><Icon name="close"/></button>
       {modal.state==="pending"?<div className="modal-status"><span className="loading-orbit"/><h2>Confirming on Monad…</h2><p>Keep this window open while your transaction is mined.</p></div>:modal.state==="error"?<div className="modal-status"><span className="error-mark">!</span><h2>That didn’t go through</h2><p>{modal.error}</p><button className="primary-button" onClick={()=>setModal({...modal,state:"confirm",error:undefined})}>Try again</button></div>:<>
