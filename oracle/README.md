@@ -19,6 +19,17 @@ cre workflow simulate . --target staging-settings
 cre workflow deploy . --target staging-settings --yes
 ```
 
+While DON deployment access is pending, a ready testnet observation can be submitted through the
+CRE broadcast simulator from the repository root:
+
+```sh
+npm run cre:broadcast
+```
+
+The script refuses to modify the receiver when the production observation queue is empty, verifies
+that the configured key owns the receiver, temporarily clears the workflow-ID guard for the mock
+forwarder, broadcasts the report, and restores the exact previous guard on success or failure.
+
 ## Hackathon simulation
 
 The hackathon submission uses the checked-in deterministic simulation target while production

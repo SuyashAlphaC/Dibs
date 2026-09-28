@@ -9,6 +9,7 @@
     "test": "node --import tsx --test lib/*.test.ts",
     "typecheck": "tsc --noEmit",
     "proof:stake": "tsx scripts/live-stake-proof.ts",
+    "cre:broadcast": "bash scripts/broadcast-cre-settlement.sh",
     "contracts:test": "forge test --root contracts"
   },
   "dependencies": {
