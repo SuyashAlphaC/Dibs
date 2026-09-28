@@ -7,7 +7,7 @@ import {useIdentity} from "@/components/identity-provider";
 import {useScoutDashboard} from "@/components/use-scout-dashboard";
 import {Icon} from "@/components/shared/icons";
 import {Avatar} from "@/components/shared/avatar";
-import type {CastMarket} from "@/lib/types";
+import type {CastMarket,LiveScoutSignal} from "@/lib/types";
 import {ScoutAssistant} from "@/components/scout-assistant";
 
 const nav = [
@@ -22,6 +22,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const identity = useIdentity();
   const {dashboard}=useScoutDashboard(identity.address);
   const [markets,setMarkets]=useState<CastMarket[]>([]);
+  const [scoutSignals,setScoutSignals]=useState<LiveScoutSignal[]>([]);
   const shortAddress=identity.address?.match(/^0x[a-fA-F0-9]{40}$/)?`${identity.address.slice(0,6)}…${identity.address.slice(-4)}`:identity.address;
   const accountName=identity.farcaster?.displayName||identity.farcaster?.username||shortAddress||"Wallet scout";
   const accountAvatar=identity.farcaster?<Avatar name={accountName} src={identity.farcaster.avatarUrl} size={34}/>:<span className="wallet-avatar-fallback"><Icon name="profile"/></span>;
@@ -29,20 +30,24 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const positions=dashboard?.positions??[];
   useEffect(()=>{
     const controller=new AbortController();
-    fetch("/api/casts",{signal:controller.signal}).then(response=>response.json()).then((payload:{casts?:CastMarket[]})=>setMarkets(payload.casts??[])).catch(()=>{});
+    fetch("/api/casts",{signal:controller.signal}).then(response=>response.json()).then((payload:{casts?:CastMarket[];signals?:LiveScoutSignal[]})=>{setMarkets(payload.casts??[]);setScoutSignals(payload.signals??[]);}).catch(()=>{});
     return()=>controller.abort();
   },[]);
   const topics=Array.from(new Set(markets.map(market=>market.category))).slice(0,7);
-  const momentMarkets=Array.from(new Map(markets.map(market=>[market.author.fid||market.author.username,market])).values());
+  const shortScout=(address:string)=>`${address.slice(0,6)}…${address.slice(-4)}`;
   return <div className="app-frame">
     <a className="skip-link" href="#main-content">Skip to discovery content</a>
     <header className="topbar">
-      <Link href="/discover" className="brand" aria-label="Dibs home"><img className="brand-logo" src="/dibs_logo.png" alt="Dibs Farcaster discovery" width="92" height="54" decoding="async" fetchPriority="high"/></Link>
+      <div className="brand-cluster">
+        <Link href="/discover" className="brand" aria-label="Dibs home"><img className="brand-logo" src="/dibs_logo.png" alt="Dibs Farcaster discovery" width="92" height="54" decoding="async" fetchPriority="high"/></Link>
+        <p className="brand-mantra">Social signals.<br/>Real conviction.<br/>Early wins.</p>
+        <p className="brand-network">[Monad mainnet] <i/> <span>{markets.reduce((total,market)=>total+market.newScouts,0)} scouts online</span></p>
+      </div>
       <nav className="topnav" aria-label="Primary navigation">
         {nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}>{item.label}</Link>)}
       </nav>
       <div className="topbar-actions">
-        <label className="header-search"><Icon name="discover"/><input type="search" autoComplete="off" aria-label="Search casts and scouts" placeholder="Search casts, scouts…"/></label>
+        <form className="header-search" action="/discover" method="get" role="search"><Icon name="discover"/><input name="q" type="search" autoComplete="off" aria-label="Search casts and scouts" placeholder="Search casts, scouts…"/></form>
         <span className="network-live"><i/>Live</span>
         <Link className="icon-button" aria-label="Activity" href="/activity"><Icon name="bell"/></Link>
         <div className="balance"><span>Monad balance</span><strong>{identity.balance?`${identity.balance} MON`:identity.authenticated?"—":"Not connected"}</strong></div>
@@ -53,7 +58,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
       <aside className="left-rail">
         <nav className="side-nav" aria-label="App sections">
           <p className="eyebrow">Workspace</p>
-          {nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}><Icon name={item.icon}/><span>{item.label}</span></Link>)}
+          {nav.map((item,index)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}><b>{String(index+1).padStart(2,"0")}</b><Icon name={item.icon}/><span>{item.label}</span><i>→</i></Link>)}
         </nav>
         <div className="reputation-mini">
           <p className="eyebrow">Scout metric alpha</p><div><span>Signal score</span><strong>{identity.authenticated?score:"—"}</strong></div>
@@ -66,7 +71,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
       <main className="main-content" id="main-content" tabIndex={-1}>{children}<footer className="site-footer"><span>© 2026 Dibs · Social discovery on Monad</span><nav aria-label="Product and trust links"><Link href="/privacy">Privacy</Link><a href="https://github.com/SuyashAlphaC/Dibs" target="_blank" rel="noreferrer">Source</a><a href="https://github.com/SuyashAlphaC/Dibs/issues" target="_blank" rel="noreferrer">Contact</a><a href="/.well-known/security.txt">Security</a></nav></footer></main>
       <aside className="right-rail">
         <div className="rail-heading"><div>Moments <em>&amp; Signals</em></div><Link href="/discover">View all</Link></div>
-        <div className="moment-row" role="list" tabIndex={0} aria-label="Moments from live scouts">{momentMarkets.map(market=><Link role="listitem" aria-label={`Open ${market.author.displayName}'s moment`} title={market.author.displayName} href={`/market/${market.id}`} key={`${market.author.fid}-${market.id}`}><Avatar name={market.author.displayName} src={market.author.avatarUrl} size={38}/><span>{market.author.displayName.split(" ")[0]}</span></Link>)}{!markets.length&&["D","I","B","S"].map(letter=><span className="moment-placeholder" key={letter}>{letter}</span>)}</div>
+        <div className="moment-row" role="list" tabIndex={0} aria-label="Recent onchain scout signals">{scoutSignals.map(signal=>{const label=shortScout(signal.scout);return <Link role="listitem" aria-label={`Open scout ${label}`} title={`${label} · ${signal.spent.toFixed(3)} MON committed`} href={`/scout/${signal.scout}`} key={signal.scout}><Avatar name={label} size={38}/><span>{label.slice(0,6)}</span></Link>;})}{!scoutSignals.length&&<span className="moment-empty">No scout signals yet</span>}</div>
         <p className="rail-section-label">Trending topics</p>
         <div className="topic-cloud">{(topics.length?topics:["Farcaster","AI","Culture","Crypto","Builders"]).map(topic=><Link href={`/discover?topic=${encodeURIComponent(topic)}`} key={topic}>#{topic.toLowerCase().replaceAll(" ","")}</Link>)}</div>
         <p className="rail-section-label">Closing soon</p>

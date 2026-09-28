@@ -122,7 +122,17 @@ indexer.onEvent({contract: "Dibs", event: "ResultExpired"}, async ({event, conte
   const id = event.params.marketId.toString();
   const market = await context.Market.get(id);
   if (!market) return;
-  context.Market.set({...market, resultExpired: true, evidenceHash: event.params.evidenceHash});
+  // ResultExpired is emitted immediately after ResultSubmitted in the same
+  // transaction. Write the complete terminal result state so parallel handler
+  // reads cannot restore the earlier OPEN snapshot.
+  context.Market.set({
+    ...market,
+    resultExpired: true,
+    resultSubmittedAt: BigInt(event.block.timestamp),
+    qualityGrowthScore: ZERO,
+    evidenceHash: event.params.evidenceHash,
+    status: "PENDING",
+  });
 });
 
 indexer.onEvent({contract: "Dibs", event: "MarketChallenged"}, async ({event, context}) => {

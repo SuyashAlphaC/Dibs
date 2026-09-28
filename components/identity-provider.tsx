@@ -22,6 +22,7 @@ type Identity = {
   balance?: string;
   farcaster?: FarcasterIdentity;
   mode: "privy" | "demo";
+  gasSponsored: boolean;
   login: () => void;
   linkFarcaster: () => void;
   logout: () => void;
@@ -39,6 +40,8 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
   // Only expose a wallet after Privy has completed the signed login flow, and
   // prefer the external wallet the scout explicitly connected.
   const wallet=authenticated?(wallets.find(candidate=>candidate.walletClientType!=="privy")??wallets[0]):undefined;
+  const sponsorshipEnabled=process.env.NEXT_PUBLIC_SPONSOR_TRANSACTIONS==="true";
+  const gasSponsored=Boolean(wallet&&wallet.walletClientType==="privy"&&sponsorshipEnabled);
   const farcasterAccount=user?.linkedAccounts.find(account=>account.type==="farcaster");
   const farcaster=useMemo<FarcasterIdentity|undefined>(()=>{
     if(!farcasterAccount?.fid)return undefined;
@@ -69,6 +72,7 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
       balance,
       farcaster,
       mode: "privy",
+      gasSponsored,
       login: () => login(),
       linkFarcaster,
       logout,
@@ -78,7 +82,7 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
         if(wallet.chainId!==`eip155:${monad.id}`) await wallet.switchChain(monad.id);
         const result = await sendTransaction(transaction, {
           address: wallet.address,
-          sponsor: process.env.NEXT_PUBLIC_SPONSOR_TRANSACTIONS === "true",
+          sponsor: gasSponsored,
         });
         const receipt=await monadClient.waitForTransactionReceipt({hash:result.hash});
         if(receipt.status!=="success")throw new Error("The transaction reverted.");
@@ -86,7 +90,7 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
         return result.hash;
       },
     }),
-    [authenticated, balance, farcaster, linkFarcaster, login, logout, privyReady, refreshBalance, sendTransaction, wallet, walletsReady],
+    [authenticated, balance, farcaster, gasSponsored, linkFarcaster, login, logout, privyReady, refreshBalance, sendTransaction, wallet, walletsReady],
   );
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>;
 }
@@ -102,6 +106,7 @@ function DemoIdentity({children}: {children: React.ReactNode}) {
       address: authenticated ? "0xD1b5…A143" : undefined,
       balance:authenticated?"12.4":undefined,
       mode: "demo",
+      gasSponsored:false,
       login: () => setAuthenticated(true),
       linkFarcaster: () => undefined,
       logout: () => setAuthenticated(false),

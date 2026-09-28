@@ -21,7 +21,7 @@ function transactionMessage(error:unknown){
   return "The transaction did not confirm. Nothing was recorded by Dibs.";
 }
 
-export function DiscoverApp({initialMode="trending"}:{initialMode?:string}) {
+export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMode?:string;initialQuery?:string}) {
   const identity = useIdentity();
   const [mode,setMode] = useState(initialMode);
   const [category,setCategory] = useState("All");
@@ -31,12 +31,14 @@ export function DiscoverApp({initialMode="trending"}:{initialMode?:string}) {
   const [toast,setToast] = useState<string|null>(null);
   const [recentId,setRecentId] = useState<string|null>(null);
   const categories = ["All","AI","Crypto","Social","Culture"];
+  const query=initialQuery.trim().toLowerCase();
   const visible = useMemo(()=>marketList.filter((market)=>{
+    if(query&&!`${market.author.displayName} ${market.author.username} ${market.text} ${market.category}`.toLowerCase().includes(query))return false;
     if(category!=="All"&&market.category!==category)return false;
     if(mode==="opened")return market.ageMinutes<=30;
     if(mode==="early")return market.status==="active"||market.status==="closing";
     return true;
-  }),[marketList,category,mode]);
+  }),[marketList,category,mode,query]);
   const activeMarkets=marketList.filter(market=>market.status==="active"||market.status==="closing");
   const totalConviction=marketList.reduce((sum,market)=>sum+market.totalStaked,0);
   const totalScouts=marketList.reduce((sum,market)=>sum+market.newScouts,0);
@@ -99,8 +101,9 @@ export function DiscoverApp({initialMode="trending"}:{initialMode?:string}) {
       <div className="mode-tabs">{["trending","early","opened"].map((item)=><button key={item} className={mode===item?"active":""} onClick={()=>setMode(item)}>{item==="opened"?"New":item==="early"?"Early":"All"}</button>)}</div>
       <div className="category-filter">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
     </section>
-    <div className="feed-label"><span>{visible.length} signal{visible.length===1?"":"s"}</span><span>{dataSource==="envio"?"Sort · Conviction high to low":"Preview data · staking disabled"}</span></div>
+    <div className="feed-label"><span>{visible.length} signal{visible.length===1?"":"s"}{query?` matching “${initialQuery.trim()}”`:""}</span><span>{dataSource==="envio"?"Sort · Conviction high to low":"Preview data · staking disabled"}</span></div>
     <section className="market-feed" aria-labelledby="live-markets-title"><h2 className="sr-only" id="live-markets-title">Live Farcaster discovery markets</h2>{visible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
+    {!visible.length&&<section className="empty-state search-empty"><strong>No matching signals</strong><p>Try a Farcaster username, topic, or phrase from a cast.</p></section>}
     <section className="discovery-explainer" aria-labelledby="how-dibs-works">
       <p className="eyebrow">Transparent discovery</p><h2 id="how-dibs-works">How does Dibs find early Farcaster signals?</h2>
       <p>Dibs turns early social discovery into an accountable onchain signal. Scouts back promising casts with MON, collective conviction determines discovery rank, and quality-weighted engagement settles each market.</p>

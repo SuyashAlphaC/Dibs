@@ -76,11 +76,12 @@ with the real workflow ID using `setExpectedWorkflowId(bytes32)`.
 The submission uses CRE simulation while production deploy access is pending. The checked-in
 `simulation-settings` target completed successfully against the explicitly labeled public fixture:
 
-- Result: `1` observation processed.
-- Market: `2`.
+- Result: `2` observations processed.
+- Markets: `2` normal submission and `3` challenged re-observation.
 - Quality-growth score: `3800`.
 - Quality gate: `3` interactions accepted, `2` rejected.
 - Report state: `prepared-dry-run` (no production broadcast claimed).
+- Challenge decision: market `3` recomputed from `8000` to `3800`; `upheld=true`.
 - Binary hash: `0ded2d257d90635098f513bf49746add2a67d3a88e783bfd616997fc5fe9e5df`.
 - Config hash: `1d9db45337742e3528773ca39f4a50cf436b40e999bb7a9998d8c2ec6d35c5e5`.
 - Evidence: [`oracle/SIMULATION_EVIDENCE.md`](../oracle/SIMULATION_EVIDENCE.md).

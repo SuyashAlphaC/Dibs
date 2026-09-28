@@ -1,5 +1,6 @@
-import type {CastMarket, MarketStatus} from "@/lib/types";
+import type {CastMarket, LiveScoutSignal, MarketStatus} from "@/lib/types";
 import {toNeynarCastHash} from "@/lib/farcaster";
+import {decodeQualityBaseline} from "@/lib/quality-baseline";
 
 type IndexedMarket = {
   id: string;
@@ -43,6 +44,16 @@ type IndexedScoutPosition = {
   firstScoutedAt: string;
 };
 
+type IndexedMarketPosition = IndexedScoutPosition & {scout: string};
+
+export type MarketScoutPosition = {
+  scout: string;
+  units: number;
+  spent: number;
+  claimed: number;
+  leadMinutes: number;
+};
+
 export type ScoutDashboard = {
   calls: number;
   successfulCalls: number;
@@ -70,7 +81,7 @@ export type ScoutDashboard = {
 export type SettlementMarket = {
   marketId: number;
   castHash: `0x${string}`;
-  baselineEngagement: number;
+  baselineQualifiedScore: number;
   openedAt: number;
   closesAt: number;
   action: "submit" | "resolve";
@@ -111,7 +122,7 @@ async function queryEnvio<T>(query: string, variables?: Record<string, unknown>)
       method: "POST",
       headers: {"content-type": "application/json"},
       body: JSON.stringify({query, variables}),
-      next: {revalidate: 3},
+      cache: "no-store",
     });
     if (!response.ok) throw new Error(`Envio returned ${response.status}`);
     const payload = (await response.json()) as {data?: T; errors?: {message: string}[]};
@@ -148,6 +159,36 @@ function mon(value: string) {
   return Number(BigInt(value)) / 1e18;
 }
 
+export function scoutConvictionWei(totalStake: string, seedStake: string) {
+  const total = BigInt(totalStake);
+  const seed = BigInt(seedStake);
+  return total > seed ? total - seed : 0n;
+}
+
+export function isSubmissionMarketWindow(openedAt: string | number, closesAt: string | number) {
+  const duration = Number(closesAt) - Number(openedAt);
+  return duration > 0 && duration <= 86_460;
+}
+
+export function needsOracleObservation(
+  status: IndexedMarket["status"],
+  closesAt: string | number,
+  resultSubmittedAt: string | undefined,
+  now: number,
+) {
+  return status === "CHALLENGED" || (!resultSubmittedAt && Number(closesAt) <= now);
+}
+
+function rankByScoutConviction(markets: IndexedMarket[]) {
+  return [...markets].sort((a, b) => {
+    const aConviction = scoutConvictionWei(a.totalStake, a.seedStake);
+    const bConviction = scoutConvictionWei(b.totalStake, b.seedStake);
+    if (aConviction !== bConviction) return aConviction > bConviction ? -1 : 1;
+    if (a.scoutCount !== b.scoutCount) return b.scoutCount - a.scoutCount;
+    return Number(b.openedAt) - Number(a.openedAt);
+  });
+}
+
 function statusOf(status: IndexedMarket["status"], closesAt: number): MarketStatus {
   if (status === "SETTLED") return "settled";
   if (status === "CHALLENGED") return "challenged";
@@ -177,9 +218,10 @@ async function toCastMarket(
   const closesAt = Number(market.closesAt);
   const ageMinutes = Math.max(1, Math.floor((now - Date.parse(cast.timestamp)) / 60_000));
   const timeLeftMinutes = Math.max(0, Math.ceil((closesAt * 1000 - now) / 60_000));
-  const totalStaked = mon(market.totalStake);
+  const totalStaked = mon(scoutConvictionWei(market.totalStake, market.seedStake).toString());
   const totalUnits = Number(market.totalUnits);
   const qualityScore = Number(market.qualityGrowthScore);
+  const baseline = decodeQualityBaseline(market.baselineEngagement);
   const status = statusOf(market.status, closesAt);
   const allocation = mon(market.scoutAllocation) + mon(market.creatorAllocation);
 
@@ -217,12 +259,15 @@ async function toCastMarket(
         ? "A scout flagged this result for secondary review"
         : status === "settled"
           ? `Settled with a quality-growth score of ${qualityScore}`
-          : `${market.scoutCount} scouts committed ${totalStaked.toFixed(3)} MON`,
+          : market.scoutCount
+            ? `${market.scoutCount} scout${market.scoutCount === 1 ? "" : "s"} committed ${totalStaked.toFixed(3)} MON`
+            : "Awaiting first scout",
     nextUnitCost: 0.01 + totalUnits * 0.001,
     potentialReward: status === "settled" ? allocation : 0,
     userHasDibs: ownedMarketIds.has(market.id),
     settlementScore: status === "settled" ? qualityScore : undefined,
-    baselineEngagement: Number(market.baselineEngagement),
+    baselineEngagement: baseline.rawEngagement,
+    baselineQualifiedScore: baseline.qualifiedScore,
     resultSubmittedAt: market.resultSubmittedAt ? Number(market.resultSubmittedAt) : undefined,
     challengeUpheld: market.challengeUpheld,
     scoutAllocation: mon(market.scoutAllocation),
@@ -244,8 +289,14 @@ export async function getLiveMarkets(scoutAddress?: string): Promise<CastMarket[
   if (!data) return null;
 
   const owned = new Set((data.Position ?? []).map((position) => position.marketId));
+  // Epoch one was an early seven-day deployment rehearsal. Keep it available by
+  // direct URL and in scout history, but never mix it into the judge-facing
+  // 24-hour discovery feed.
+  const submissionMarkets = data.Market.filter((market) =>
+    isSubmissionMarketWindow(market.openedAt, market.closesAt),
+  );
   return Promise.all(
-    data.Market.map((market, index) => toCastMarket(market, index + 1, owned)),
+    rankByScoutConviction(submissionMarkets).map((market, index) => toCastMarket(market, index + 1, owned)),
   );
 }
 
@@ -253,9 +304,54 @@ export async function getLiveMarket(marketId: string): Promise<CastMarket | null
   const data = await queryEnvio<{Market: IndexedMarket[]}>(
     `query RankedDibsMarkets { Market(order_by: {totalStake: desc}) { ${MARKET_FIELDS} } }`,
   );
-  const index = data?.Market.findIndex((market) => market.id === marketId) ?? -1;
-  if (!data || index < 0) return null;
-  return toCastMarket(data.Market[index], index + 1, new Set());
+  if (!data) return null;
+  const ranked = rankByScoutConviction(data.Market);
+  const index = ranked.findIndex((market) => market.id === marketId);
+  if (index < 0) return null;
+  return toCastMarket(ranked[index], index + 1, new Set());
+}
+
+export async function getLiveScoutSignals(): Promise<LiveScoutSignal[] | null> {
+  const data = await queryEnvio<{Position: IndexedMarketPosition[]}>(
+    `query LiveScoutSignals {
+      Position(order_by: {firstScoutedAt: desc}, limit: 50) {
+        marketId scout units spent claimed firstScoutedAt
+      }
+    }`,
+  );
+  if (!data) return null;
+  const unique = new Map<string, LiveScoutSignal>();
+  for (const position of data.Position) {
+    const scout = position.scout.toLowerCase();
+    if (!unique.has(scout)) unique.set(scout, {
+      scout,
+      marketId: position.marketId,
+      spent: mon(position.spent),
+      firstScoutedAt: Number(position.firstScoutedAt),
+    });
+  }
+  return [...unique.values()];
+}
+
+export async function getMarketPositions(marketId: string): Promise<MarketScoutPosition[] | null> {
+  const data=await queryEnvio<{Position:IndexedMarketPosition[];Market:IndexedMarket[]}>(
+    `query MarketScoutLedger($marketId: String!) {
+      Position(where: {marketId: {_eq: $marketId}}, order_by: {firstScoutedAt: asc}) {
+        marketId scout units spent claimed firstScoutedAt
+      }
+      Market(where: {id: {_eq: $marketId}}, limit: 1) { ${MARKET_FIELDS} }
+    }`,
+    {marketId},
+  );
+  if(!data)return null;
+  const openedAt=Number(data.Market[0]?.openedAt??0);
+  return data.Position.map(position=>({
+    scout:position.scout,
+    units:Number(position.units),
+    spent:mon(position.spent),
+    claimed:mon(position.claimed),
+    leadMinutes:Math.max(0,Math.floor((Number(position.firstScoutedAt)-openedAt)/60)),
+  }));
 }
 
 
@@ -299,7 +395,7 @@ export async function getScoutDashboard(scoutAddress: string): Promise<ScoutDash
 
   const owned = new Set(data.Position.map((position) => position.marketId));
   const rankedMarkets = await Promise.all(
-    data.Market.map((market, index) => toCastMarket(market, index + 1, owned)),
+    rankByScoutConviction(data.Market).map((market, index) => toCastMarket(market, index + 1, owned)),
   );
   const marketById = new Map(rankedMarkets.map((market) => [market.id, market]));
   const indexedMarketById = new Map(data.Market.map((market) => [market.id, market]));
@@ -333,12 +429,13 @@ export async function getScoutDashboard(scoutAddress: string): Promise<ScoutDash
 
   return {
     calls: scout.calls,
-    successfulCalls: scout.successfulCalls,
+    // A successful call is a settled winning position, not merely a reward that was claimed.
+    successfulCalls: resolvedSuccessfulCalls,
     units: Number(scout.units),
     spent,
     claimed,
     withdrawnCredit,
-    hitRate: scout.calls ? (scout.successfulCalls / scout.calls) * 100 : 0,
+    hitRate: resolvedPositions.length ? (resolvedSuccessfulCalls / resolvedPositions.length) * 100 : 0,
     roi: spent ? ((claimed + withdrawnCredit - spent) / spent) * 100 : 0,
     resolvedCalls: resolvedPositions.length,
     pendingCalls,
@@ -352,16 +449,21 @@ export async function getScoutDashboard(scoutAddress: string): Promise<ScoutDash
 
 export async function getMarketsAwaitingResult(): Promise<SettlementMarket[] | null> {
   const data = await queryEnvio<{Market: IndexedMarket[]}>(
+    // Use the same unfiltered query shape as the live feed, which is known to be
+    // accepted by every deployed HyperIndex schema revision. Filtering locally
+    // also avoids enum-coercion incompatibilities between Hasura versions.
     `query MarketsAwaitingResult {
-      Market(where: {status: {_in: [OPEN, CHALLENGED]}}, order_by: {closesAt: asc}) { ${MARKET_FIELDS} }
+      Market(order_by: {closesAt: asc}) { ${MARKET_FIELDS} }
     }`,
   );
   if (!data) return null;
   const now = Math.floor(Date.now() / 1000);
-  return data.Market.filter((market) => market.status === "CHALLENGED" || Number(market.closesAt) <= now).map((market) => ({
+  return data.Market.filter((market) =>
+    needsOracleObservation(market.status,market.closesAt,market.resultSubmittedAt,now),
+  ).map((market) => ({
     marketId: Number(market.id),
     castHash: market.castHash as `0x${string}`,
-    baselineEngagement: Number(market.baselineEngagement),
+    baselineQualifiedScore: decodeQualityBaseline(market.baselineEngagement).qualifiedScore,
     openedAt: Number(market.openedAt),
     closesAt: Number(market.closesAt),
     action: market.status === "CHALLENGED" ? "resolve" : "submit",

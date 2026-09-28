@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "node --import tsx --test lib/*.test.ts",
     "typecheck": "tsc --noEmit",
+    "proof:stake": "tsx scripts/live-stake-proof.ts",
     "contracts:test": "forge test --root contracts"
   },
   "dependencies": {

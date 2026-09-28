@@ -13,18 +13,19 @@ cre workflow simulate . --target simulation-settings
 
 ## Verified run
 
-- Timestamp: `2026-09-27T21:23:28Z`
+- Timestamp: `2026-09-28T15:46:51Z`
 - CRE CLI: `1.33.0`
 - Network configuration: Monad testnet (`10143`)
 - Receiver encoded into the report: `0x78B87B938cbdd9453F2dA6adA043d74d792C9A81`
 - Binary hash: `0ded2d257d90635098f513bf49746add2a67d3a88e783bfd616997fc5fe9e5df`
 - Config hash: `1d9db45337742e3528773ca39f4a50cf436b40e999bb7a9998d8c2ec6d35c5e5`
-- Workflow result: `1`
+- Workflow result: `2`
 
 Key user log:
 
 ```text
 market=2 action=submit score=3800 upheld=false accepted=3 rejected=2 report=prepared-dry-run
+market=3 action=resolve score=3800 upheld=true accepted=3 rejected=2 report=prepared-dry-run
 ```
 
 ## What the run proves
@@ -37,6 +38,8 @@ market=2 action=submit score=3800 upheld=false accepted=3 rejected=2 report=prep
    `1200` baseline produced quality growth of `3800`.
 4. The workflow encoded `submitResult(2, 3800, evidenceHash)` for Monad, wrapped it in the
    chain-bound receiver payload, and prepared a CRE report.
+5. A second challenged observation began with a reported score of `8000`, recomputed to `3800`,
+   and prepared `resolveChallenge(3, 3800, evidenceHash, true)` so the challenger bond is refunded.
 
 ## Safety boundary
 

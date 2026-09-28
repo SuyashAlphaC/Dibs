@@ -7,6 +7,7 @@ export default function sitemap():MetadataRoute.Sitemap{
     {url:`${origin}/discover`,lastModified,changeFrequency:"hourly",priority:1},
     {url:`${origin}/dibs`,lastModified,changeFrequency:"daily",priority:.7},
     {url:`${origin}/activity`,lastModified,changeFrequency:"daily",priority:.6},
+    {url:`${origin}/simulation`,lastModified,changeFrequency:"weekly",priority:.6},
     {url:`${origin}/profile`,lastModified,changeFrequency:"weekly",priority:.6},
     {url:`${origin}/privacy`,lastModified,changeFrequency:"yearly",priority:.2},
   ];

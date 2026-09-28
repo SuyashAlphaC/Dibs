@@ -16,9 +16,17 @@ const observation={
   previousQualityGrowthScore:0
 } as const;
 
+const challengedObservation={
+  ...observation,
+  marketId:3,
+  castHash:"0xaff95fb8cc8dd1b979e2b58f523185c353e0b059000000000000000000000000",
+  action:"resolve",
+  previousQualityGrowthScore:8_000,
+} as const;
+
 export function GET(){
   return NextResponse.json(
-    {simulation:true,description:"Deterministic CRE submission fixture; never used for production settlement.",observations:[observation]},
+    {simulation:true,description:"Deterministic normal and challenged CRE fixtures; never used for production settlement.",observations:[observation,challengedObservation]},
     {headers:{"cache-control":"public, max-age=300","x-dibs-simulation":"true"}},
   );
 }

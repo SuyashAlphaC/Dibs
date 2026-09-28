@@ -1,6 +1,14 @@
 import {createWalletClient,http,isAddress,padHex,parseEther,type Address,type Hex} from "viem";
 import {privateKeyToAccount} from "viem/accounts";
 import {monad,monadClient} from "@/lib/contract";
+import {collectQualifiedInteractions} from "@/lib/neynar-observations";
+import {encodeQualityBaseline,qualifiedInteractionScore} from "@/lib/quality-baseline";
+import {
+  DEFAULT_DISCOVERY_POLICY,
+  discoveryPriority,
+  qualifiesForDiscovery,
+  type DiscoveryPolicy,
+} from "@/lib/discovery-quality";
 
 const openerAbi=[
   {type:"function",name:"epochCount",stateMutability:"view",inputs:[],outputs:[{name:"",type:"uint256"}]},
@@ -16,18 +24,29 @@ const openerAbi=[
   {type:"function",name:"expireMissingResult",stateMutability:"nonpayable",inputs:[{name:"marketId",type:"uint256"}],outputs:[]},
   {type:"function",name:"expireChallenge",stateMutability:"nonpayable",inputs:[{name:"marketId",type:"uint256"}],outputs:[]},
   {type:"function",name:"finalizeEpoch",stateMutability:"nonpayable",inputs:[{name:"epochId",type:"uint256"}],outputs:[]},
+  {type:"function",name:"challenge",stateMutability:"payable",inputs:[{name:"marketId",type:"uint256"}],outputs:[]},
+  {type:"function",name:"challengeBond",stateMutability:"view",inputs:[],outputs:[{name:"",type:"uint96"}]},
+  {type:"function",name:"unitsOf",stateMutability:"view",inputs:[{name:"marketId",type:"uint256"},{name:"scout",type:"address"}],outputs:[{name:"",type:"uint256"}]},
 ] as const;
 
-type NeynarCast={hash:string;timestamp:string;parent_hash?:string|null;text?:string;author:{custody_address?:string;verified_addresses?:{primary?:{eth_address?:string};eth_addresses?:string[]}};reactions?:{likes_count?:number;recasts_count?:number};replies?:{count?:number}};
+type NeynarCast={hash:string;timestamp:string;parent_hash?:string|null;text?:string;author:{custody_address?:string;score?:number;follower_count?:number;registered_at?:string;verified_addresses?:{primary?:{eth_address?:string};eth_addresses?:string[]}};reactions?:{likes_count?:number;recasts_count?:number};replies?:{count?:number}};
 
-function engagement(cast:NeynarCast){return (cast.reactions?.likes_count??0)+(cast.reactions?.recasts_count??0)+(cast.replies?.count??0);}
 function creator(cast:NeynarCast):Address|null{
   const candidate=cast.author.verified_addresses?.primary?.eth_address??cast.author.verified_addresses?.eth_addresses?.[0]??cast.author.custody_address;
   return candidate&&isAddress(candidate)?candidate:null;
 }
-function eligible(cast:NeynarCast,now:number){
-  const age=now-Date.parse(cast.timestamp)/1000;
-  return /^0x[0-9a-fA-F]{40}$/.test(cast.hash)&&age>=0&&age<30*60&&engagement(cast)<25&&!cast.parent_hash&&creator(cast)!==null;
+function discoveryPolicy():DiscoveryPolicy{
+  return {
+    ...DEFAULT_DISCOVERY_POLICY,
+    minAuthorScore:Number(process.env.MARKET_MIN_AUTHOR_SCORE??DEFAULT_DISCOVERY_POLICY.minAuthorScore),
+    minAuthorAgeDays:Number(process.env.MARKET_MIN_AUTHOR_AGE_DAYS??DEFAULT_DISCOVERY_POLICY.minAuthorAgeDays),
+    minCastCharacters:Number(process.env.MARKET_MIN_CAST_CHARACTERS??DEFAULT_DISCOVERY_POLICY.minCastCharacters),
+  };
+}
+function eligible(cast:NeynarCast,now:number,policy:DiscoveryPolicy){
+  return /^0x[0-9a-fA-F]{40}$/.test(cast.hash)
+    && creator(cast)!==null
+    && qualifiesForDiscovery(cast,now,policy);
 }
 
 async function neynarFeed(apiKey:string,requestedHash?:string){
@@ -41,7 +60,7 @@ async function neynarFeed(apiKey:string,requestedHash?:string){
     const url=new URL("https://api.neynar.com/v2/farcaster/cast");url.searchParams.set("identifier",requestedHash);url.searchParams.set("type","hash");
     return fetchCasts(url);
   }
-  const sources=(process.env.MARKET_SOURCE_CHANNELS??"farcaster,monad,crypto,ethereum,builders").split(",").map(value=>value.trim()).filter(Boolean);
+  const sources=(process.env.MARKET_SOURCE_CHANNELS??"farcaster,monad,ethereum,builders").split(",").map(value=>value.trim()).filter(Boolean);
   const batches=await Promise.all(sources.map(async channel=>{
     const url=new URL("https://api.neynar.com/v2/farcaster/feed/");url.searchParams.set("feed_type","filter");url.searchParams.set("filter_type","channel_id");url.searchParams.set("channel_id",channel);url.searchParams.set("limit","25");url.searchParams.set("with_recasts","false");
     try{return await fetchCasts(url);}catch{return [];}
@@ -71,7 +90,12 @@ export async function openEligibleMarkets(requestedHash?:string){
   const wallet=createWalletClient({account,chain:monad,transport:http(rpc)});
   const now=BigInt(Math.floor(Date.now()/1000));
   const discovered=await neynarFeed(apiKey,requestedHash);
-  const candidates=discovered.filter(cast=>eligible(cast,Number(now))).slice(0,Number(process.env.MAX_MARKETS_PER_RUN??5));
+  const nowSeconds=Number(now);
+  const policy=discoveryPolicy();
+  const candidates=discovered
+    .filter(cast=>eligible(cast,nowSeconds,policy))
+    .sort((a,b)=>discoveryPriority(b,nowSeconds)-discoveryPriority(a,nowSeconds))
+    .slice(0,Number(process.env.MAX_MARKETS_PER_RUN??5));
   if(!candidates.length)return {epochId:null,discovered:discovered.length,eligible:0,opened:[],skipped:[]};
   let epochId=await active24HourEpoch(contract,now);
   let epochTransaction:Hex|undefined;
@@ -89,7 +113,15 @@ export async function openEligibleMarkets(requestedHash?:string){
     if(existing!==0n){skipped.push({hash:cast.hash,reason:`already market ${existing}`});continue;}
     const castCreator=creator(cast);
     if(!castCreator){skipped.push({hash:cast.hash,reason:"no EVM creator address"});continue;}
-    const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"openMarket",args:[epochId,castHash,castCreator,BigInt(engagement(cast))]});
+    let baseline:bigint;
+    try{
+      const interactions=await collectQualifiedInteractions(cast.hash,Number(now),apiKey);
+      baseline=encodeQualityBaseline(qualifiedInteractionScore(interactions));
+    }catch{
+      skipped.push({hash:cast.hash,reason:"qualified baseline unavailable"});
+      continue;
+    }
+    const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"openMarket",args:[epochId,castHash,castCreator,baseline]});
     await monadClient.waitForTransactionReceipt({hash:transaction});
     opened.push({hash:cast.hash,transaction});
   }
@@ -104,6 +136,7 @@ export async function maintainMarkets(){
   const account=privateKeyToAccount(key);
   const wallet=createWalletClient({account,chain:monad,transport:http(rpc)});
   const now=Math.floor(Date.now()/1000);
+  const challengeDemoMarket=process.env.CHALLENGE_DEMO_MARKET_ID;
   const [marketCount,challengePeriod,resultGrace,resolutionPeriod]=await Promise.all([
     monadClient.readContract({address:contract,abi:openerAbi,functionName:"marketCount"}),
     monadClient.readContract({address:contract,abi:openerAbi,functionName:"challengePeriod"}),
@@ -124,6 +157,27 @@ export async function maintainMarkets(){
     if(action){
       const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:action,args:[id]});
       await monadClient.waitForTransactionReceipt({hash:transaction});transactions.push({action,id:id.toString(),transaction});
+      if(action==="expireMissingResult"&&challengeDemoMarket===id.toString()){
+        const [units,bond]=await Promise.all([
+          monadClient.readContract({address:contract,abi:openerAbi,functionName:"unitsOf",args:[id,account.address]}),
+          monadClient.readContract({address:contract,abi:openerAbi,functionName:"challengeBond"}),
+        ]);
+        if(units>0n){
+          const challengeTransaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"challenge",args:[id],value:bond});
+          await monadClient.waitForTransactionReceipt({hash:challengeTransaction});
+          transactions.push({action:"challengeDemo",id:id.toString(),transaction:challengeTransaction});
+        }
+      }
+    }else if(challengeDemoMarket===id.toString()&&resultSubmitted&&!challenged&&now<resultSubmittedAt+challengePeriod){
+      const [units,bond]=await Promise.all([
+        monadClient.readContract({address:contract,abi:openerAbi,functionName:"unitsOf",args:[id,account.address]}),
+        monadClient.readContract({address:contract,abi:openerAbi,functionName:"challengeBond"}),
+      ]);
+      if(units>0n){
+        const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"challenge",args:[id],value:bond});
+        await monadClient.waitForTransactionReceipt({hash:transaction});
+        transactions.push({action:"challengeDemo",id:id.toString(),transaction});
+      }
     }
   }
   for(const epochId of epochIds){

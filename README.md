@@ -1,5 +1,7 @@
 # Dibs
 
+Hackathon judges: see the [submission guide](./SUBMISSION.md) for the live demo path, architecture, sponsor evidence, and the explicit CRE simulation boundary.
+
 **Call culture before it matters.** Dibs is a conviction-ranked Farcaster feed on Monad. Scouts buy increasingly expensive conviction units on casts they believe will grow; quality-weighted engagement resolves each epoch, and successful early scouts share the reward allocation.
 
 ## What is implemented
@@ -12,6 +14,7 @@
 - Chainlink CRE workflow for observation consensus, deterministic quality scoring, evidence hashing, Monad settlement reports, and secondary challenge review.
 - ERC-165 CRE settlement receiver with Keystone Forwarder authentication, optional workflow-ID pinning, chain-bound reports, and a strict settlement-function allowlist.
 - Authenticated market keeper that discovers eligible Neynar casts, creates exact 24-hour epochs, opens seeded markets, expires missed reports/challenges, and finalizes ready epochs.
+- Quality-gated discovery that requires an established Farcaster account, a Neynar score of at least `0.6`, and substantive root-cast text before a market can open.
 - Farcaster Mini App SDK bootstrap, hosted manifest, launch metadata, and compliant icon/splash/social assets.
 
 This is hackathon software and has not been audited. Do not use it with production funds.
@@ -68,6 +71,7 @@ The UI intentionally enters demo mode when credentials are absent. Add `NEXT_PUB
 npm run typecheck
 npm run build
 npm run contracts:test
+npm run proof:stake -- <optional-market-id>
 
 cd indexer && npm run codegen && npm run typecheck
 cd ../oracle && npm test && npm run typecheck
@@ -85,8 +89,16 @@ cd ../oracle && npm test && npm run typecheck
 
 The production keeper is invoked every ten minutes by
 `.github/workflows/market-keeper.yml`. The endpoint rejects requests without the shared bearer
-secret. Farcaster ownership for `dibs-metropolis.vercel.app` is signed by FID `2459338`; the
+secret, retries transient failures, and then checks `/api/health` for the Envio/oracle queue. The
+schedule intentionally runs at minutes `3,13,23,33,43,53` to avoid GitHub's documented
+top-of-hour congestion window. Farcaster ownership for `dibs-metropolis.vercel.app` is signed by FID `2459338`; the
 association is stored in Vercel and served through the production manifest.
+
+`npm run proof:stake` is the reproducible live proof harness. It buys one unit on an active,
+compliant market with a dedicated testnet key and fails unless the resulting position appears in
+the production Envio-backed API. `CHALLENGE_DEMO_MARKET_ID` can nominate that market for one
+transparent optimistic-challenge rehearsal after its result is submitted; it is never enabled by
+default.
 
 The in-app Scout Assistant is a deterministic, transparent scan over live Envio markets. It can
 rank early, high-momentum, or closing signals, but it never signs or submits a wallet transaction.

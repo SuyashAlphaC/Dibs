@@ -36,6 +36,7 @@ export interface CastMarket {
   userStake?: number;
   settlementScore?: number;
   baselineEngagement?: number;
+  baselineQualifiedScore?: number;
   resultSubmittedAt?: number;
   challengeUpheld?: boolean;
   scoutAllocation?: number;
@@ -51,4 +52,11 @@ export interface ScoutPosition {
   amount: number;
   potentialReward: number;
   status: MarketStatus;
+}
+
+export interface LiveScoutSignal {
+  scout: string;
+  marketId: string;
+  spent: number;
+  firstScoutedAt: number;
 }

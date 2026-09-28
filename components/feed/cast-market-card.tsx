@@ -14,7 +14,7 @@ export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMar
       </div>
       <Link className="cast-text" href={`/market/${market.id}`}>{market.text}</Link>
       <div className="social-proof"><span>♡ {market.likes}</span><span>↻ {market.recasts}</span><span>◌ {market.replies}</span><span>{market.category}</span></div>
-      <div className="conviction-row"><div><span>Conviction</span><strong>{market.totalStaked.toFixed(3)} <small>MON</small></strong></div><b className={market.movementPercent>=0?"positive":"negative"}>{market.movementPercent>=0?"▲ ":"▼ "}{Math.abs(market.movementPercent)}%</b></div>
+      <div className="conviction-row"><div><span>Scout conviction</span><strong>{market.totalStaked.toFixed(3)} <small>MON</small></strong></div>{market.newScouts?<b className={market.movementPercent>=0?"positive":"negative"}>{market.movementPercent>=0?"▲ ":"▼ "}{Math.abs(market.movementPercent)}%</b>:<b className="awaiting-scout">Awaiting first scout</b>}</div>
       <div className="card-spark"><svg viewBox="0 0 240 32" preserveAspectRatio="none" aria-hidden="true"><path d="M0 27 C35 26 42 15 70 18 S110 28 132 14 S175 8 194 15 S220 8 240 4"/></svg></div>
       <div className="signal-strip"><div><span>Scouts</span><strong>{market.newScouts}</strong></div><div><span>Units</span><strong>{market.totalUnits}</strong></div><div><span>{market.timeLeftMinutes?"Time remaining":"Status"}</span><strong>{market.timeLeftMinutes?`${Math.floor(market.timeLeftMinutes/60)}h ${market.timeLeftMinutes%60}m`:market.status}</strong></div></div>
     </div>

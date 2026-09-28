@@ -2,7 +2,9 @@ name: Dibs market keeper
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    # Avoid the top-of-hour congestion window where GitHub documents that
+    # scheduled jobs can be delayed or dropped.
+    - cron: "3,13,23,33,43,53 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -22,6 +24,16 @@ jobs:
           DIBS_CRON_SECRET: ${{ secrets.DIBS_CRON_SECRET }}
         run: |
           curl --fail-with-body --silent --show-error \
+            --retry 3 \
+            --retry-all-errors \
+            --retry-delay 5 \
             --request POST \
             --header "Authorization: Bearer ${DIBS_CRON_SECRET}" \
             https://dibs-metropolis.vercel.app/api/markets/open
+      - name: Verify Envio and oracle queue health
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --retry 3 \
+            --retry-all-errors \
+            --retry-delay 5 \
+            https://dibs-metropolis.vercel.app/api/health
