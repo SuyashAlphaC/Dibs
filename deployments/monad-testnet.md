@@ -89,3 +89,14 @@ The submission uses CRE simulation while production deploy access is pending. Th
 Do not replace the temporary expected workflow ID until `cre workflow deploy` succeeds and returns
 the registered workflow ID. Keeping the sentinel value makes the receiver fail closed during the
 approval wait.
+
+## Live stake → Envio proof — 2026-09-28
+
+- Quality-gated market: `11`
+- Cast: `0x60585b815eedf9626a5ee94f0f1d5b6eaeb22b41`
+- Scout: `0x335E58172fC8895Bc380471972A22Ea921152F6d`
+- Stake transaction: `0x7d9a7df64dbc0a24f4127dad8e8b6d93eb00c946fc8ce5f865b4547bdbda7eb0`
+- Block: `66411040`
+- Result: confirmed on Monad and observed through the production Envio-backed `/api/casts` signal list.
+- Follow-up: market `11` is configured as the transparent optimistic-challenge rehearsal after
+  its result window opens. The keeper will challenge it only because the proof wallet owns a unit.

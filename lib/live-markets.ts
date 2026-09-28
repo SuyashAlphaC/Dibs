@@ -292,8 +292,10 @@ export async function getLiveMarkets(scoutAddress?: string): Promise<CastMarket[
   // Epoch one was an early seven-day deployment rehearsal. Keep it available by
   // direct URL and in scout history, but never mix it into the judge-facing
   // 24-hour discovery feed.
+  const qualityGateActivatedAt=Number(process.env.MARKET_QUALITY_GATE_ACTIVATED_AT??0);
   const submissionMarkets = data.Market.filter((market) =>
-    isSubmissionMarketWindow(market.openedAt, market.closesAt),
+    isSubmissionMarketWindow(market.openedAt, market.closesAt)
+      && Number(market.openedAt)>=qualityGateActivatedAt,
   );
   return Promise.all(
     rankByScoutConviction(submissionMarkets).map((market, index) => toCastMarket(market, index + 1, owned)),
