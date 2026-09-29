@@ -25,6 +25,10 @@ if [[ -z "${RPC_URL}" || -z "${OWNER_KEY}" ]]; then
   exit 2
 fi
 
+# CRE requires this exact variable name when --broadcast signs the simulator's
+# testnet write. Reuse the receiver-owner key already validated below.
+export CRE_ETH_PRIVATE_KEY="${CRE_ETH_PRIVATE_KEY:-${OWNER_KEY}}"
+
 for command in curl jq cast cre; do
   command -v "${command}" >/dev/null || {
     echo "Required command is unavailable: ${command}" >&2
