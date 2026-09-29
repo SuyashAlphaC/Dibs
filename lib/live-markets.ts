@@ -1,5 +1,5 @@
-import type {CastMarket, LiveScoutSignal, MarketStatus} from "@/lib/types";
-import {toNeynarCastHash} from "@/lib/farcaster";
+import type {CastMarket, LiveScoutSignal, MarketStatus, ScoutIdentity} from "@/lib/types";
+import {resolveFarcasterIdentities,toNeynarCastHash} from "@/lib/farcaster";
 import {decodeQualityBaseline} from "@/lib/quality-baseline";
 
 type IndexedMarket = {
@@ -52,6 +52,18 @@ export type MarketScoutPosition = {
   spent: number;
   claimed: number;
   leadMinutes: number;
+  identity: ScoutIdentity;
+};
+
+export type ScoutLeaderboardEntry={
+  address:string;
+  identity:ScoutIdentity;
+  weeklyCalls:number;
+  totalCalls:number;
+  successfulCalls:number;
+  averageLeadMinutes:number;
+  specialty:string;
+  streakDays:number;
 };
 
 export type ScoutDashboard = {
@@ -208,10 +220,19 @@ function placeholderCast(market: IndexedMarket): NeynarCast {
   };
 }
 
+function categoryLabel(parentUrl?:string){
+  const raw=parentUrl?.split("/").at(-1)||"Farcaster";
+  if(raw.startsWith("erc721:"))return "Collectibles";
+  if(raw.startsWith("erc20:"))return "Tokens";
+  if(raw.length>28)return "Onchain";
+  return raw.replaceAll("-"," ").replace(/\b\w/g,letter=>letter.toUpperCase());
+}
+
 async function toCastMarket(
   market: IndexedMarket,
   rank: number,
   ownedMarketIds: ReadonlySet<string>,
+  scoutPreview:ScoutIdentity[]=[],
 ): Promise<CastMarket> {
   const cast = (await fetchNeynarCast(market.castHash)) ?? placeholderCast(market);
   const now = Date.now();
@@ -251,7 +272,7 @@ async function toCastMarket(
     rankDelta: 0,
     movementPercent: 0,
     newScouts: market.scoutCount,
-    category: cast.parent_url?.split("/").at(-1) || "Farcaster",
+    category: categoryLabel(cast.parent_url),
     status,
     timeLeftMinutes,
     whyRising:
@@ -272,23 +293,25 @@ async function toCastMarket(
     challengeUpheld: market.challengeUpheld,
     scoutAllocation: mon(market.scoutAllocation),
     creatorAllocation: mon(market.creatorAllocation),
+    scoutPreview,
   };
 }
 
-export async function getLiveMarkets(scoutAddress?: string): Promise<CastMarket[] | null> {
-  const positionSelection = scoutAddress
-    ? `Position(where: {scout: {_eq: $scout}}) { marketId }`
-    : "";
-  const data = await queryEnvio<{Market: IndexedMarket[]; Position?: IndexedPosition[]}>(
-    `query LiveDibsMarkets${scoutAddress ? "($scout: String!)" : ""} {
+export async function getLiveMarkets(scoutAddress?: string,viewerFid?:number): Promise<CastMarket[] | null> {
+  const data = await queryEnvio<{Market: IndexedMarket[]; Position: IndexedMarketPosition[]}>(
+    `query LiveDibsMarkets {
       Market(order_by: {totalStake: desc}) { ${MARKET_FIELDS} }
-      ${positionSelection}
+      Position(order_by: {firstScoutedAt: asc}) { marketId scout units spent claimed firstScoutedAt }
     }`,
-    scoutAddress ? {scout: scoutAddress.toLowerCase()} : undefined,
   );
   if (!data) return null;
 
-  const owned = new Set((data.Position ?? []).map((position) => position.marketId));
+  const owned = new Set(data.Position.filter(position=>position.scout.toLowerCase()===scoutAddress?.toLowerCase()).map(position => position.marketId));
+  const identities=await resolveFarcasterIdentities(data.Position.map(position=>position.scout),viewerFid);
+  const positionsByMarket=new Map<string,IndexedMarketPosition[]>();
+  for(const position of data.Position){
+    const list=positionsByMarket.get(position.marketId)??[];list.push(position);positionsByMarket.set(position.marketId,list);
+  }
   // Epoch one was an early seven-day deployment rehearsal. Keep it available by
   // direct URL and in scout history, but never mix it into the judge-facing
   // 24-hour discovery feed.
@@ -298,7 +321,9 @@ export async function getLiveMarkets(scoutAddress?: string): Promise<CastMarket[
       && Number(market.openedAt)>=qualityGateActivatedAt,
   );
   return Promise.all(
-    rankByScoutConviction(submissionMarkets).map((market, index) => toCastMarket(market, index + 1, owned)),
+    rankByScoutConviction(submissionMarkets).map((market, index) => toCastMarket(
+      market,index+1,owned,(positionsByMarket.get(market.id)??[]).slice(0,3).map(position=>identities.get(position.scout.toLowerCase())!),
+    )),
   );
 }
 
@@ -313,7 +338,7 @@ export async function getLiveMarket(marketId: string): Promise<CastMarket | null
   return toCastMarket(ranked[index], index + 1, new Set());
 }
 
-export async function getLiveScoutSignals(): Promise<LiveScoutSignal[] | null> {
+export async function getLiveScoutSignals(viewerFid?:number): Promise<LiveScoutSignal[] | null> {
   const data = await queryEnvio<{Position: IndexedMarketPosition[]}>(
     `query LiveScoutSignals {
       Position(order_by: {firstScoutedAt: desc}, limit: 50) {
@@ -332,7 +357,9 @@ export async function getLiveScoutSignals(): Promise<LiveScoutSignal[] | null> {
       firstScoutedAt: Number(position.firstScoutedAt),
     });
   }
-  return [...unique.values()];
+  const result=[...unique.values()];
+  const identities=await resolveFarcasterIdentities(result.map(signal=>signal.scout),viewerFid);
+  return result.map(signal=>({...signal,identity:identities.get(signal.scout)}));
 }
 
 export async function getMarketPositions(marketId: string): Promise<MarketScoutPosition[] | null> {
@@ -347,12 +374,14 @@ export async function getMarketPositions(marketId: string): Promise<MarketScoutP
   );
   if(!data)return null;
   const openedAt=Number(data.Market[0]?.openedAt??0);
+  const identities=await resolveFarcasterIdentities(data.Position.map(position=>position.scout));
   return data.Position.map(position=>({
     scout:position.scout,
     units:Number(position.units),
     spent:mon(position.spent),
     claimed:mon(position.claimed),
     leadMinutes:Math.max(0,Math.floor((Number(position.firstScoutedAt)-openedAt)/60)),
+    identity:identities.get(position.scout.toLowerCase())!,
   }));
 }
 
@@ -447,6 +476,64 @@ export async function getScoutDashboard(scoutAddress: string): Promise<ScoutDash
     averageLeadMinutes,
     positions,
   };
+}
+
+function consecutiveDayStreak(timestamps:number[]){
+  const days=[...new Set(timestamps.map(timestamp=>Math.floor(timestamp/86_400)))].sort((a,b)=>b-a);
+  if(!days.length)return 0;
+  let streak=1;
+  for(let index=1;index<days.length;index++){
+    if(days[index-1]-days[index]!==1)break;
+    streak++;
+  }
+  return streak;
+}
+
+export async function getScoutLeaderboard():Promise<ScoutLeaderboardEntry[]|null>{
+  const data=await queryEnvio<{Scout:IndexedScout[];Position:IndexedMarketPosition[];Market:IndexedMarket[]}>(
+    `query ScoutLeaderboard {
+      Scout { id calls successfulCalls units spent claimed withdrawnCredit }
+      Position(order_by: {firstScoutedAt: desc}) { marketId scout units spent claimed firstScoutedAt }
+      Market { ${MARKET_FIELDS} }
+    }`,
+  );
+  if(!data)return null;
+  const cutoff=Math.floor(Date.now()/1000)-(7*86_400);
+  const positionsByScout=new Map<string,IndexedMarketPosition[]>();
+  for(const position of data.Position){
+    const address=position.scout.toLowerCase();
+    const list=positionsByScout.get(address)??[];list.push(position);positionsByScout.set(address,list);
+  }
+  const identities=await resolveFarcasterIdentities([...positionsByScout.keys()]);
+  const rankedMarkets=rankByScoutConviction(data.Market);
+  const marketCategories=new Map<string,string>();
+  await Promise.all(rankedMarkets.map(async(market,index)=>{
+    const cast=await toCastMarket(market,index+1,new Set());
+    marketCategories.set(market.id,cast.category);
+  }));
+  const scoutById=new Map(data.Scout.map(scout=>[scout.id.toLowerCase(),scout]));
+  return [...positionsByScout.entries()].map(([address,positions])=>{
+    const scout=scoutById.get(address);
+    const weekly=positions.filter(position=>Number(position.firstScoutedAt)>=cutoff);
+    const categoryCounts=new Map<string,number>();
+    for(const position of positions){
+      const category=marketCategories.get(position.marketId)??"Social";
+      categoryCounts.set(category,(categoryCounts.get(category)??0)+1);
+    }
+    const specialty=[...categoryCounts.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]??"Social";
+    const marketById=new Map(data.Market.map(market=>[market.id,market]));
+    const leads=positions.map(position=>Math.max(0,(Number(position.firstScoutedAt)-Number(marketById.get(position.marketId)?.openedAt??position.firstScoutedAt))/60));
+    return {
+      address,
+      identity:identities.get(address)!,
+      weeklyCalls:weekly.length,
+      totalCalls:scout?.calls??positions.length,
+      successfulCalls:scout?.successfulCalls??0,
+      averageLeadMinutes:leads.length?leads.reduce((sum,value)=>sum+value,0)/leads.length:0,
+      specialty:`${specialty} scout`,
+      streakDays:consecutiveDayStreak(positions.map(position=>Number(position.firstScoutedAt))),
+    };
+  }).sort((a,b)=>b.weeklyCalls-a.weeklyCalls||b.successfulCalls-a.successfulCalls||a.averageLeadMinutes-b.averageLeadMinutes).slice(0,20);
 }
 
 export async function getMarketsAwaitingResult(): Promise<SettlementMarket[] | null> {

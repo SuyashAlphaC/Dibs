@@ -15,6 +15,7 @@ import {
   type DibsTransaction,
 } from "@/lib/contract";
 import type {CastMarket} from "@/lib/types";
+import {ShareReceiptButton} from "@/components/shared/share-receipt-button";
 
 type Action="challenge"|"expire-result"|"expire-challenge"|"finalize"|"claim-scout"|"claim-creator"|"withdraw";
 
@@ -42,6 +43,7 @@ export function LifecycleActions({market}:{market:CastMarket}){
   const identity=useIdentity();
   const [pending,setPending]=useState<Action|null>(null);
   const [notice,setNotice]=useState("");
+  const [claimed,setClaimed]=useState(false);
   const [walletState,setWalletState]=useState<Awaited<ReturnType<typeof walletMarketState>>>(null);
   const address=identity.address?.match(/^0x[a-fA-F0-9]{40}$/)?.[0] as `0x${string}`|undefined;
 
@@ -81,6 +83,7 @@ export function LifecycleActions({market}:{market:CastMarket}){
     try{
       const hash=await identity.sendStake(tx);
       setNotice(`Confirmed on Monad · ${hash.slice(0,10)}…`);
+      if(action==="claim-scout")setClaimed(true);
       await refresh();
       window.dispatchEvent(new Event("dibs:position-confirmed"));
     }catch(error){setNotice(message(error));}
@@ -97,5 +100,6 @@ export function LifecycleActions({market}:{market:CastMarket}){
     </div>
     {!actions.length&&<p className="lifecycle-empty">No wallet action is due yet. The protocol advances when its current time window completes.</p>}
     {notice&&<p className="lifecycle-notice">{notice}</p>}
+    {claimed&&<ShareReceiptButton market={market} kind="win"/>}
   </section>;
 }

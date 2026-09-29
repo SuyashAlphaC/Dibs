@@ -9,6 +9,8 @@ import {markets as seedMarkets} from "@/lib/mock/markets";
 import type {CastMarket} from "@/lib/types";
 import {scoutTransaction} from "@/lib/contract";
 import {MetricCard} from "@/components/dashboard/metric-card";
+import {MobileDibsStack} from "@/components/feed/mobile-dibs-stack";
+import {ShareReceiptButton} from "@/components/shared/share-receipt-button";
 
 type ModalState = {market:CastMarket;state:"confirm"|"pending"|"error";error?:string}|null;
 
@@ -30,6 +32,8 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
   const [modal,setModal] = useState<ModalState>(null);
   const [toast,setToast] = useState<string|null>(null);
   const [recentId,setRecentId] = useState<string|null>(null);
+  const [mobileView,setMobileView]=useState<"stack"|"feed">("stack");
+  const [receipt,setReceipt]=useState<{market:CastMarket;rank:number}|null>(null);
   const categories = ["All","AI","Crypto","Social","Culture"];
   const query=initialQuery.trim().toLowerCase();
   const visible = useMemo(()=>marketList.filter((market)=>{
@@ -46,19 +50,23 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
   useEffect(()=>{
     const controller=new AbortController();
     const refresh=()=>{
-      const query=identity.address?.match(/^0x[a-fA-F0-9]{40}$/)?`?scout=${identity.address}`:"";
+      const params=new URLSearchParams();
+      if(identity.address?.match(/^0x[a-fA-F0-9]{40}$/))params.set("scout",identity.address);
+      if(identity.farcaster?.fid)params.set("viewerFid",String(identity.farcaster.fid));
+      const query=params.size?`?${params}`:"";
       fetch(`/api/casts${query}`,{signal:controller.signal})
         .then(response=>response.json())
         .then((payload:{source:string;casts:CastMarket[]})=>{
-          if(payload.source==="envio"&&payload.casts.length){setMarketList(payload.casts);setDataSource("envio");}
+          const casts=payload.casts.map(market=>({...market,scoutPreview:market.scoutPreview?.map(scout=>identity.farcaster&&scout.address.toLowerCase()===identity.address?.toLowerCase()?{...scout,fid:identity.farcaster.fid,username:identity.farcaster.username,displayName:identity.farcaster.displayName||identity.farcaster.username||scout.displayName,avatarUrl:identity.farcaster.avatarUrl}:scout)}));
+          if(payload.source==="envio"&&casts.length){setMarketList(casts);setDataSource("envio");}
           else {setMarketList(seedMarkets);setDataSource("demo");}
         })
         .catch(()=>{});
     };
     refresh();
-    const interval=window.setInterval(refresh,5000);
+    const interval=window.setInterval(refresh,15000);
     return()=>{controller.abort();window.clearInterval(interval);};
-  },[identity.address]);
+  },[identity.address,identity.farcaster?.fid]);
 
   function startDibs(market:CastMarket) {
     if(!/^\d+$/.test(market.id)){
@@ -81,16 +89,17 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
       if ("startViewTransition" in document) (document as Document & {startViewTransition:(cb:()=>void)=>void}).startViewTransition(update); else update();
       window.dispatchEvent(new Event("dibs:position-confirmed"));
       const newRank=updated.find((market)=>market.id===target.id)?.rank;
-      setRecentId(target.id); setModal(null); setToast(`Dibs confirmed — ${target.author.displayName} moved from #${target.rank} to #${newRank}.`);
+      setRecentId(target.id); setModal(null); setReceipt({market:target,rank:newRank??target.rank});setToast(`Dibs confirmed — ${target.author.displayName} moved from #${target.rank} to #${newRank}.`);
       window.setTimeout(()=>setRecentId(null),2400); window.setTimeout(()=>setToast(null),5200);
     } catch(error) { setModal({...modal,state:"error",error:transactionMessage(error)}); }
   }
 
-  return <>
+  return <div className={`discover-page mobile-${mobileView}`}>
     <section className="discover-hero terminal-hero">
       <div><p className="eyebrow">Live social discovery</p><h1>Farcaster Discovery for Early Casts</h1><h2>Find what&apos;s about to matter before it trends.</h2><p><i className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Live casts ranked by collective onchain conviction":"Curated protocol preview · Transactions are disabled"}</p></div>
       <div className="rpc-chip"><Icon name="spark"/><span>Monad + Envio</span><strong>{dataSource==="envio"?"Synced":"Preview"}</strong></div>
     </section>
+    {(!identity.authenticated||Number(identity.balance??0)<0.01)&&<section className="onboarding-strip" aria-label="Get ready to call Dibs"><div><span>01</span><strong>{identity.authenticated?"Wallet connected":"Connect a wallet"}</strong><small>{identity.authenticated?"Identity ready on Monad Testnet":"Privy creates one if you need it"}</small></div><div><span>02</span><strong>Get testnet MON</strong><small>Only the conviction amount is at stake</small></div><div><span>03</span><strong>{identity.gasSponsored?"Gas sponsored":"Gas checked before signing"}</strong><small>{identity.gasSponsored?"Privy pays the network fee":"Your wallet shows any network fee"}</small></div><div className="onboarding-actions">{!identity.authenticated&&<button onClick={identity.login}>Connect wallet</button>}<a href="https://faucet.monad.xyz/" target="_blank" rel="noreferrer">Open official faucet ↗</a></div></section>}
     <section className="metric-grid">
       <MetricCard label="Active markets" value={String(activeMarkets.length)} detail="24 hour windows" points={[3,6,5,9,8,12,11,14]} />
       <MetricCard label="Total conviction" value={`${totalConviction.toFixed(2)} MON`} detail="Across live signals" tone="pink" points={[4,5,4,8,7,11,10,14]} />
@@ -101,8 +110,9 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
       <div className="mode-tabs">{["trending","early","opened"].map((item)=><button key={item} className={mode===item?"active":""} onClick={()=>setMode(item)}>{item==="opened"?"New":item==="early"?"Early":"All"}</button>)}</div>
       <div className="category-filter">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
     </section>
+    <div className="mobile-discovery-switch" role="group" aria-label="Mobile discovery view"><button className={mobileView==="stack"?"active":""} onClick={()=>setMobileView("stack")}>Dibs Stack</button><button className={mobileView==="feed"?"active":""} onClick={()=>setMobileView("feed")}>Feed</button></div>
     <div className="feed-label"><span>{visible.length} signal{visible.length===1?"":"s"}{query?` matching “${initialQuery.trim()}”`:""}</span><span>{dataSource==="envio"?"Sort · Conviction high to low":"Preview data · staking disabled"}</span></div>
-    <section className="market-feed" aria-labelledby="live-markets-title"><h2 className="sr-only" id="live-markets-title">Live Farcaster discovery markets</h2>{visible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
+    {mobileView==="stack"&&<MobileDibsStack markets={visible} onDibs={startDibs}/>}<section className={`market-feed ${mobileView==="stack"?"mobile-feed-hidden":""}`} aria-labelledby="live-markets-title"><h2 className="sr-only" id="live-markets-title">Live Farcaster discovery markets</h2>{visible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
     {!visible.length&&<section className="empty-state search-empty"><strong>No matching signals</strong><p>Try a Farcaster username, topic, or phrase from a cast.</p></section>}
     <section className="discovery-explainer" aria-labelledby="how-dibs-works">
       <p className="eyebrow">Transparent discovery</p><h2 id="how-dibs-works">How does Dibs find early Farcaster signals?</h2>
@@ -120,6 +130,6 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
         <button className="primary-button" onClick={confirmDibs} disabled={!identity.ready}>{!identity.ready?"Loading wallet…":identity.authenticated&&identity.walletReady?`Confirm Dibs · ${modal.market.nextUnitCost.toFixed(3)} MON`:"Connect wallet to confirm"}</button>
       </>}
     </section></div>}
-    {toast&&<div className="toast" role="status"><span><Icon name="check"/></span><p>{toast}</p><button onClick={()=>setToast(null)} aria-label="Dismiss"><Icon name="close"/></button></div>}
-  </>;
+    {toast&&<div className="toast" role="status"><span><Icon name="check"/></span><div><p>{toast}</p>{receipt&&<ShareReceiptButton market={receipt.market} rank={receipt.rank}/>}</div><button onClick={()=>{setToast(null);setReceipt(null);}} aria-label="Dismiss"><Icon name="close"/></button></div>}
+  </div>;
 }

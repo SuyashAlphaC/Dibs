@@ -30,9 +30,13 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const positions=dashboard?.positions??[];
   useEffect(()=>{
     const controller=new AbortController();
-    fetch("/api/casts",{signal:controller.signal}).then(response=>response.json()).then((payload:{casts?:CastMarket[];signals?:LiveScoutSignal[]})=>{setMarkets(payload.casts??[]);setScoutSignals(payload.signals??[]);}).catch(()=>{});
+    const viewer=identity.farcaster?.fid?`?viewerFid=${identity.farcaster.fid}`:"";
+    fetch(`/api/casts${viewer}`,{signal:controller.signal}).then(response=>response.json()).then((payload:{casts?:CastMarket[];signals?:LiveScoutSignal[]})=>{
+      setMarkets(payload.casts??[]);
+      setScoutSignals((payload.signals??[]).map(signal=>identity.farcaster&&signal.scout.toLowerCase()===identity.address?.toLowerCase()?{...signal,identity:{address:signal.scout,fid:identity.farcaster.fid,username:identity.farcaster.username,displayName:identity.farcaster.displayName||identity.farcaster.username||signal.identity?.displayName||shortScout(signal.scout),avatarUrl:identity.farcaster.avatarUrl}}:signal));
+    }).catch(()=>{});
     return()=>controller.abort();
-  },[]);
+  },[identity.address,identity.farcaster]);
   const topics=Array.from(new Set(markets.map(market=>market.category))).slice(0,7);
   const shortScout=(address:string)=>`${address.slice(0,6)}…${address.slice(-4)}`;
   return <div className="app-frame">
@@ -71,7 +75,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
       <main className="main-content" id="main-content" tabIndex={-1}>{children}<footer className="site-footer"><span>© 2026 Dibs · Social discovery on Monad</span><nav aria-label="Product and trust links"><Link href="/privacy">Privacy</Link><a href="https://github.com/SuyashAlphaC/Dibs" target="_blank" rel="noreferrer">Source</a><a href="https://github.com/SuyashAlphaC/Dibs/issues" target="_blank" rel="noreferrer">Contact</a><a href="/.well-known/security.txt">Security</a></nav></footer></main>
       <aside className="right-rail">
         <div className="rail-heading"><div>Moments <em>&amp; Signals</em></div><Link href="/discover">View all</Link></div>
-        <div className="moment-row" role="list" tabIndex={0} aria-label="Recent onchain scout signals">{scoutSignals.map(signal=>{const label=shortScout(signal.scout);return <Link role="listitem" aria-label={`Open scout ${label}`} title={`${label} · ${signal.spent.toFixed(3)} MON committed`} href={`/scout/${signal.scout}`} key={signal.scout}><Avatar name={label} size={38}/><span>{label.slice(0,6)}</span></Link>;})}{!scoutSignals.length&&<span className="moment-empty">No scout signals yet</span>}</div>
+        <div className="moment-row" role="list" tabIndex={0} aria-label="Recent onchain scout signals">{scoutSignals.map(signal=>{const label=signal.identity?.username?`@${signal.identity.username}`:signal.identity?.displayName||shortScout(signal.scout);return <Link role="listitem" aria-label={`Open scout ${label}`} title={`${label} · ${signal.spent.toFixed(3)} MON committed`} href={`/scout/${signal.scout}`} key={signal.scout}><Avatar name={label} src={signal.identity?.avatarUrl} size={38}/><span>{label.replace(/^@/,"").slice(0,8)}</span></Link>;})}{!scoutSignals.length&&<span className="moment-empty">No scout signals yet</span>}</div>
         <p className="rail-section-label">Trending topics</p>
         <div className="topic-cloud">{(topics.length?topics:["Farcaster","AI","Culture","Crypto","Builders"]).map(topic=><Link href={`/discover?topic=${encodeURIComponent(topic)}`} key={topic}>#{topic.toLowerCase().replaceAll(" ","")}</Link>)}</div>
         <p className="rail-section-label">Closing soon</p>

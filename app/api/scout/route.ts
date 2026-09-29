@@ -1,5 +1,6 @@
 import {NextResponse} from "next/server";
 import {getScoutDashboard} from "@/lib/live-markets";
+import {resolveFarcasterIdentities} from "@/lib/farcaster";
 
 export async function GET(request: Request) {
   const address = new URL(request.url).searchParams.get("address");
@@ -7,6 +8,6 @@ export async function GET(request: Request) {
     return NextResponse.json({source: "demo", dashboard: null});
   }
 
-  const dashboard = await getScoutDashboard(address);
-  return NextResponse.json({source: dashboard ? "envio" : "demo", dashboard});
+  const [dashboard,identities] = await Promise.all([getScoutDashboard(address),resolveFarcasterIdentities([address])]);
+  return NextResponse.json({source: dashboard ? "envio" : "demo", dashboard,identity:identities.get(address.toLowerCase())});
 }

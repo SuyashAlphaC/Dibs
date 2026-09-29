@@ -1,26 +1,30 @@
 import Link from "next/link";
-import {Icon} from "@/components/shared/icons";
 import {Avatar} from "@/components/shared/avatar";
 import {formatAgeMinutes} from "@/lib/time";
 import type {CastMarket} from "@/lib/types";
 
 export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMarket;onDibs:(market:CastMarket)=>void;justDibsed?:boolean}) {
   const disabled = market.status !== "active" && market.status !== "closing";
+  const elapsed=Math.max(4,Math.min(100,((1440-market.timeLeftMinutes)/1440)*100));
+  const scout=market.scoutPreview?.[0];
+  const scoutProof=scout
+    ? `${scout.followedByViewer?"You follow ":""}${scout.username?`@${scout.username}`:scout.displayName}${market.newScouts>1?` · +${market.newScouts-1} more`:""} called this`
+    : market.newScouts?`${market.newScouts} verified wallet scout${market.newScouts===1?"":"s"} called this`:"First call is open";
   return <article className={`market-card ${justDibsed?"just-dibsed":""} status-${market.status}`} style={{viewTransitionName:`market-${market.id}`}}>
-    <div className="card-topline"><div className="rank-column"><strong>#{String(market.rank).padStart(2,"0")}</strong>{market.rankDelta!==0&&<span className={market.rankDelta>0?"up":"down"}>{market.rankDelta>0?"↑":"↓"}{Math.abs(market.rankDelta)} positions</span>}</div><span className={`status-pill ${market.status}`}><i/>{market.status==="active"?(market.ageMinutes<30?"Early":"Live"):market.status}</span></div>
+    <div className="card-topline"><span className={`status-pill ${market.status}`}><i/>{market.status==="active"?(market.ageMinutes<30?"Early":"Live"):market.status}</span><span className="taste-rank">Signal #{String(market.rank).padStart(2,"0")}</span></div>
     <div className="cast-body">
       <div className="author-row">
         <Avatar name={market.author.displayName} src={market.author.avatarUrl} size={34}/>
         <div><strong>{market.author.displayName}</strong><span>@{market.author.username} · {formatAgeMinutes(market.ageMinutes)}</span></div>
       </div>
       <Link className="cast-text" href={`/market/${market.id}`}>{market.text}</Link>
+      <div className="scout-proof"><div className="scout-proof-avatars">{market.scoutPreview?.slice(0,3).map(identity=><Avatar key={identity.address} name={identity.displayName} src={identity.avatarUrl} size={24}/>)}</div><span>{scoutProof}</span></div>
       <div className="social-proof"><span>♡ {market.likes}</span><span>↻ {market.recasts}</span><span>◌ {market.replies}</span><span>{market.category}</span></div>
-      <div className="conviction-row"><div><span>Scout conviction</span><strong>{market.totalStaked.toFixed(3)} <small>MON</small></strong></div>{market.newScouts?<b className={market.movementPercent>=0?"positive":"negative"}>{market.movementPercent>=0?"▲ ":"▼ "}{Math.abs(market.movementPercent)}%</b>:<b className="awaiting-scout">Awaiting first scout</b>}</div>
-      <div className="card-spark"><svg viewBox="0 0 240 32" preserveAspectRatio="none" aria-hidden="true"><path d="M0 27 C35 26 42 15 70 18 S110 28 132 14 S175 8 194 15 S220 8 240 4"/></svg></div>
-      <div className="signal-strip"><div><span>Scouts</span><strong>{market.newScouts}</strong></div><div><span>Units</span><strong>{market.totalUnits}</strong></div><div><span>{market.timeLeftMinutes?"Time remaining":"Status"}</span><strong>{market.timeLeftMinutes?`${Math.floor(market.timeLeftMinutes/60)}h ${market.timeLeftMinutes%60}m`:market.status}</strong></div></div>
+      <div className="earliness-block"><div className="earliness-heading"><span>Earliness</span><strong>{market.ageMinutes<30?"Fresh":market.ageMinutes<360?"Early":"Established"}</strong></div><div className="earliness-track"><i style={{width:`${elapsed}%`}}/></div><div className="earliness-stats"><div><span>Age</span><strong>{formatAgeMinutes(market.ageMinutes)}</strong></div><div><span>Scouts</span><strong>{market.newScouts}</strong></div><div><span>Next unit</span><strong>{market.nextUnitCost.toFixed(3)} MON</strong></div></div></div>
+      <div className="card-lower-data"><span>Collective conviction <b>{market.totalStaked.toFixed(3)} MON</b></span><span>{market.timeLeftMinutes?`${Math.floor(market.timeLeftMinutes/60)}h ${market.timeLeftMinutes%60}m left`:market.status}</span></div>
     </div>
     <div className="card-action">
-      <button disabled={disabled||market.userHasDibs} onClick={()=>onDibs(market)}>{market.userHasDibs?"Dibs called":disabled?market.status:`Dibs · ${market.nextUnitCost.toFixed(3)}`}</button>
+      <button disabled={disabled||market.userHasDibs} onClick={()=>onDibs(market)}>{market.userHasDibs?"Dibs called":disabled?market.status:`Dibs · ${market.nextUnitCost.toFixed(3)} MON → unit #${market.totalUnits+1}`}</button>
       <Link href={`/market/${market.id}`}>View market <span>→</span></Link>
     </div>
   </article>;

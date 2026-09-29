@@ -7,6 +7,15 @@ export interface CastAuthor {
   avatarUrl: string;
 }
 
+export interface ScoutIdentity {
+  address: string;
+  fid?: number;
+  username?: string;
+  displayName: string;
+  avatarUrl?: string;
+  followedByViewer?: boolean;
+}
+
 export interface CastMarket {
   id: string;
   epochId?: string;
@@ -41,6 +50,7 @@ export interface CastMarket {
   challengeUpheld?: boolean;
   scoutAllocation?: number;
   creatorAllocation?: number;
+  scoutPreview?: ScoutIdentity[];
 }
 
 export interface ScoutPosition {
@@ -59,4 +69,5 @@ export interface LiveScoutSignal {
   marketId: string;
   spent: number;
   firstScoutedAt: number;
+  identity?: ScoutIdentity;
 }

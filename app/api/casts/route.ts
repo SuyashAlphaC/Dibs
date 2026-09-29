@@ -3,11 +3,14 @@ import {demoCasts} from "@/lib/demo-data";
 import {getLiveMarkets, getLiveScoutSignals} from "@/lib/live-markets";
 
 export async function GET(request: Request) {
-  const scout = new URL(request.url).searchParams.get("scout") ?? undefined;
+  const searchParams=new URL(request.url).searchParams;
+  const scout = searchParams.get("scout") ?? undefined;
+  const viewerFidValue=Number(searchParams.get("viewerFid"));
+  const viewerFid=Number.isSafeInteger(viewerFidValue)&&viewerFidValue>0?viewerFidValue:undefined;
   const validScout = scout && /^0x[a-fA-F0-9]{40}$/.test(scout) ? scout : undefined;
   const [markets, signals] = await Promise.all([
-    getLiveMarkets(validScout),
-    getLiveScoutSignals(),
+    getLiveMarkets(validScout,viewerFid),
+    getLiveScoutSignals(viewerFid),
   ]);
 
   if (markets?.length) {
