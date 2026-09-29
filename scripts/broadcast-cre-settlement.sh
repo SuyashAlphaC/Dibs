@@ -8,6 +8,7 @@ CORE="${DIBS_CONTRACT_ADDRESS:-${NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS:-0x0fFd42613e
 PRODUCTION_RECEIVER="${CRE_SETTLEMENT_RECEIVER_ADDRESS:-0x78B87B938cbdd9453F2dA6adA043d74d792C9A81}"
 SIMULATION_RECEIVER="${CRE_SIMULATION_RECEIVER_ADDRESS:-0x3D0AC36a876fB3bB077F115DC48F1Ae692BA7F01}"
 MOCK_FORWARDER="${CRE_MOCK_FORWARDER_ADDRESS:-0xB9F79d863261869B234c481D1f9A7af84AeAd192}"
+MIN_DEADLINE_BUFFER_SECONDS="${CRE_MIN_DEADLINE_BUFFER_SECONDS:-1200}"
 ZERO_WORKFLOW_ID="0x0000000000000000000000000000000000000000000000000000000000000000"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
@@ -74,6 +75,39 @@ if [[ "${receiver_workflow_id}" != "${ZERO_WORKFLOW_ID}" ]]; then
   echo "Simulation receiver workflow guard must be zero for simulate --broadcast." >&2
   exit 2
 fi
+
+result_grace="$(cast call "${CORE}" 'resultSubmissionGracePeriod()(uint40)' --rpc-url "${RPC_URL}" --json | jq -r '.[0]')"
+challenge_period="$(cast call "${CORE}" 'challengePeriod()(uint40)' --rpc-url "${RPC_URL}" --json | jq -r '.[0]')"
+resolution_period="$(cast call "${CORE}" 'challengeResolutionPeriod()(uint40)' --rpc-url "${RPC_URL}" --json | jq -r '.[0]')"
+now="$(date +%s)"
+
+while IFS=$'\t' read -r market_id action; do
+  market="$(cast call "${CORE}" \
+    'markets(uint256)(uint32,uint40,uint40,uint64,uint128,uint256,uint256,uint256,uint256,bytes32,bytes32,address,address,bool,bool,bool)' \
+    "${market_id}" --rpc-url "${RPC_URL}" --json)"
+  epoch_id="$(jq -r '.[0]' <<<"${market}")"
+  result_submitted_at="$(jq -r '.[2]' <<<"${market}")"
+
+  if [[ "${action}" == "submit" ]]; then
+    epoch="$(cast call "${CORE}" \
+      'epochs(uint256)(uint40,uint40,uint40,uint32,uint32,uint256,uint256,bool)' \
+      "${epoch_id}" --rpc-url "${RPC_URL}" --json)"
+    closes_at="$(jq -r '.[1]' <<<"${epoch}")"
+    deadline=$((closes_at + result_grace))
+  elif [[ "${action}" == "resolve" ]]; then
+    deadline=$((result_submitted_at + challenge_period + resolution_period))
+  else
+    echo "Unsupported oracle action for market ${market_id}: ${action}" >&2
+    exit 2
+  fi
+
+  remaining=$((deadline - now))
+  if (( remaining <= MIN_DEADLINE_BUFFER_SECONDS )); then
+    echo "Market ${market_id} has only ${remaining}s before its ${action} deadline; refusing to start a cron-triggered broadcast." >&2
+    exit 4
+  fi
+  echo "Market ${market_id} ${action} deadline preflight: ${remaining}s remaining."
+done < <(jq -r '.observations[] | [.marketId, (.action // "submit")] | @tsv' <<<"${observations}")
 
 original_oracle="$(cast call "${CORE}" 'oracle()(address)' --rpc-url "${RPC_URL}")"
 oracle_switched=false

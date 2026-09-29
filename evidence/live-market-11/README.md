@@ -21,6 +21,8 @@ This directory is retained as failure evidence, not presented as a successful CR
 ## Remediation
 
 - Workflow writes now require `TX_STATUS_SUCCESS` and log the transaction hash.
+- The script refuses to begin within 20 minutes of a submission or resolution deadline; the failed
+  market 11 run began with only about five minutes remaining.
 - Broadcast simulation uses an isolated receiver at
   `0x3D0AC36a876fB3bB077F115DC48F1Ae692BA7F01`, configured for CRE's Monad MockForwarder.
 - Deployment transaction:

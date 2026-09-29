@@ -31,7 +31,8 @@ The script refuses to change onchain state when the production observation queue
 temporarily routes only the Dibs oracle role to that receiver, broadcasts the reports, and restores
 the production Keystone receiver on success, failure, or interruption. The workflow verifies every
 `writeReport` status and prints its transaction hash; a simulator log is not treated as submission
-proof without `TX_STATUS_SUCCESS`.
+proof without `TX_STATUS_SUCCESS`. It also requires at least 20 minutes before every submit or
+challenge-resolution deadline, leaving room for the cron trigger and transaction confirmation.
 
 `config.broadcast.json` is intentionally separate from `config.testnet.json`. The former targets
 the simulation-only receiver; the latter remains the DON/production configuration. Never point a
