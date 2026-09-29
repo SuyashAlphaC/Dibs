@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {Icon} from "@/components/shared/icons";
 import {Avatar} from "@/components/shared/avatar";
+import {formatAgeMinutes} from "@/lib/time";
 import type {CastMarket} from "@/lib/types";
 
 export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMarket;onDibs:(market:CastMarket)=>void;justDibsed?:boolean}) {
@@ -10,7 +11,7 @@ export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMar
     <div className="cast-body">
       <div className="author-row">
         <Avatar name={market.author.displayName} src={market.author.avatarUrl} size={34}/>
-        <div><strong>{market.author.displayName}</strong><span>@{market.author.username} · {market.ageMinutes}m</span></div>
+        <div><strong>{market.author.displayName}</strong><span>@{market.author.username} · {formatAgeMinutes(market.ageMinutes)}</span></div>
       </div>
       <Link className="cast-text" href={`/market/${market.id}`}>{market.text}</Link>
       <div className="social-proof"><span>♡ {market.likes}</span><span>↻ {market.recasts}</span><span>◌ {market.replies}</span><span>{market.category}</span></div>
