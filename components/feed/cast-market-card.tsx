@@ -6,6 +6,7 @@ import type {CastMarket} from "@/lib/types";
 export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMarket;onDibs:(market:CastMarket)=>void;justDibsed?:boolean}) {
   const disabled = market.status !== "active" && market.status !== "closing";
   const elapsed=Math.max(4,Math.min(100,((1440-market.timeLeftMinutes)/1440)*100));
+  const projectedScoutShare=100/(market.totalUnits+1);
   const scout=market.scoutPreview?.[0];
   const scoutProof=scout
     ? `${scout.followedByViewer?"You follow ":""}${scout.username?`@${scout.username}`:scout.displayName}${market.newScouts>1?` · +${market.newScouts-1} more`:""} called this`
@@ -24,7 +25,7 @@ export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMar
       <div className="card-lower-data"><span>Collective conviction <b>{market.totalStaked.toFixed(3)} MON</b></span><span>{market.timeLeftMinutes?`${Math.floor(market.timeLeftMinutes/60)}h ${market.timeLeftMinutes%60}m left`:market.status}</span></div>
     </div>
     <div className="card-action">
-      <button disabled={disabled||market.userHasDibs} onClick={()=>onDibs(market)}>{market.userHasDibs?"Dibs called":disabled?market.status:`Dibs · ${market.nextUnitCost.toFixed(3)} MON → unit #${market.totalUnits+1}`}</button>
+      <button disabled={disabled||market.userHasDibs} onClick={()=>onDibs(market)}>{market.userHasDibs?"Dibs called":disabled?market.status:`Dibs · ${market.nextUnitCost.toFixed(3)} MON → est. ${projectedScoutShare.toFixed(projectedScoutShare<10?1:0)}% scout share`}</button>
       <Link href={`/market/${market.id}`}>View market <span>→</span></Link>
     </div>
   </article>;
