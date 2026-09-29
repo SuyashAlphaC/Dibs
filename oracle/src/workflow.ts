@@ -3,7 +3,6 @@ import {
   consensusIdenticalAggregation,
   cre,
   getNetwork,
-  hexToBase64,
   ok,
   prepareReportRequest,
   text,
@@ -87,7 +86,7 @@ function settleReadyMarkets(runtime: Runtime<Config>) {
     if (!runtime.config.dryRun) {
       evm
         .writeReport(runtime, {
-          receiver: hexToBase64(runtime.config.evm.contractAddress),
+          receiver: runtime.config.evm.contractAddress,
           report,
         })
         .result();

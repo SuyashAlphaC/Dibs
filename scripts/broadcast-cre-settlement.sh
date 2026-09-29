@@ -75,7 +75,7 @@ fi
 echo "Broadcasting ${observation_count} CRE settlement observation(s)..."
 (
   cd "${ROOT_DIR}/oracle"
-  cre workflow simulate . --target staging-settings --broadcast --evm-receipt-timeout 2m
+  printf '\n' | cre workflow simulate . --target staging-settings --broadcast --evm-receipt-timeout 2m
 )
 
 echo "CRE broadcast completed. Envio may take a short time to index the result."
