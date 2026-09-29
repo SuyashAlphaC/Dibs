@@ -1,5 +1,7 @@
 import {
   Runner,
+  TxStatus,
+  bytesToHex,
   consensusIdenticalAggregation,
   cre,
   getNetwork,
@@ -83,16 +85,24 @@ function settleReadyMarkets(runtime: Runtime<Config>) {
       [BigInt(runtime.config.evm.chainId), settlementCalldata],
     );
     const report = runtime.report(prepareReportRequest(reportPayload)).result();
+    let reportState = "prepared-dry-run";
     if (!runtime.config.dryRun) {
-      evm
+      const writeResult = evm
         .writeReport(runtime, {
           receiver: runtime.config.evm.contractAddress,
           report,
         })
         .result();
+      const txHash = writeResult.txHash ? bytesToHex(writeResult.txHash) : "unavailable";
+      if (writeResult.txStatus !== TxStatus.SUCCESS) {
+        throw new Error(
+          `CRE report write failed status=${writeResult.txStatus} tx=${txHash} error=${writeResult.errorMessage ?? "unknown"}`,
+        );
+      }
+      reportState = `submitted tx=${txHash}`;
     }
     runtime.log(
-      `market=${result.marketId} action=${observation.action??"submit"} score=${result.qualityGrowthScore} upheld=${upheld} accepted=${result.acceptedInteractions} rejected=${result.rejectedInteractions} report=${runtime.config.dryRun?"prepared-dry-run":"submitted"}`,
+      `market=${result.marketId} action=${observation.action??"submit"} score=${result.qualityGrowthScore} upheld=${upheld} accepted=${result.acceptedInteractions} rejected=${result.rejectedInteractions} report=${reportState}`,
     );
   }
 

@@ -7,6 +7,15 @@ staging-settings:
     config-path: ./config.testnet.json
     secrets-path: ""
 
+broadcast-settings:
+  user-workflow:
+    workflow-name: dibs-settlement-broadcast
+    deployment-registry: private
+  workflow-artifacts:
+    workflow-path: ./src/workflow.ts
+    config-path: ./config.broadcast.json
+    secrets-path: ""
+
 simulation-settings:
   user-workflow:
     workflow-name: dibs-settlement-simulation

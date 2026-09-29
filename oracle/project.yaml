@@ -3,6 +3,11 @@ staging-settings:
     - chain-name: monad-testnet
       url: https://testnet-rpc.monad.xyz
 
+broadcast-settings:
+  rpcs:
+    - chain-name: monad-testnet
+      url: https://testnet-rpc.monad.xyz
+
 simulation-settings:
   rpcs:
     - chain-name: monad-testnet

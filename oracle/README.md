@@ -26,9 +26,16 @@ CRE broadcast simulator from the repository root:
 npm run cre:broadcast
 ```
 
-The script refuses to modify the receiver when the production observation queue is empty, verifies
-that the configured key owns the receiver, temporarily clears the workflow-ID guard for the mock
-forwarder, broadcasts the report, and restores the exact previous guard on success or failure.
+The script refuses to change onchain state when the production observation queue is empty. For
+`simulate --broadcast`, it validates a dedicated receiver that trusts CRE's Monad MockForwarder,
+temporarily routes only the Dibs oracle role to that receiver, broadcasts the reports, and restores
+the production Keystone receiver on success, failure, or interruption. The workflow verifies every
+`writeReport` status and prints its transaction hash; a simulator log is not treated as submission
+proof without `TX_STATUS_SUCCESS`.
+
+`config.broadcast.json` is intentionally separate from `config.testnet.json`. The former targets
+the simulation-only receiver; the latter remains the DON/production configuration. Never point a
+production workflow at the MockForwarder receiver.
 
 ## Hackathon simulation
 
@@ -44,4 +51,8 @@ The fixture is explicitly labeled and is never read by the production settlement
 latest reproducible output and hashes are recorded in
 [`SIMULATION_EVIDENCE.md`](SIMULATION_EVIDENCE.md).
 
-The receiver must trust the network's official MockForwarder for a broadcast simulation or KeystoneForwarder for production; query your tenant's current addresses with `cre workflow supported-chains --output json`. Keep its expected workflow ID unset during simulation because MockForwarder omits production metadata. After production workflow deployment, call `setExpectedWorkflowId(bytes32)` with its ID before broadcasting reports.
+The dedicated simulation receiver must trust the network's official MockForwarder, while the
+production receiver must trust the KeystoneForwarder. Query the current addresses with
+`cre workflow supported-chains --output json`. Keep the simulation receiver's expected workflow ID
+unset because MockForwarder omits production metadata. After DON deployment, pin the production
+receiver with `setExpectedWorkflowId(bytes32)` before broadcasting reports.
