@@ -3,6 +3,7 @@ import {privateKeyToAccount} from "viem/accounts";
 import {monad,monadClient} from "@/lib/contract";
 import {collectQualifiedInteractions} from "@/lib/neynar-observations";
 import {encodeQualityBaseline,qualifiedInteractionScore} from "@/lib/quality-baseline";
+import type {MarketCandidate} from "@/lib/types";
 import {
   DEFAULT_DISCOVERY_POLICY,
   discoveryPriority,
@@ -29,7 +30,7 @@ const openerAbi=[
   {type:"function",name:"unitsOf",stateMutability:"view",inputs:[{name:"marketId",type:"uint256"},{name:"scout",type:"address"}],outputs:[{name:"",type:"uint256"}]},
 ] as const;
 
-type NeynarCast={hash:string;timestamp:string;parent_hash?:string|null;text?:string;author:{custody_address?:string;score?:number;follower_count?:number;registered_at?:string;verified_addresses?:{primary?:{eth_address?:string};eth_addresses?:string[]}};reactions?:{likes_count?:number;recasts_count?:number};replies?:{count?:number}};
+type NeynarCast={hash:string;timestamp:string;parent_hash?:string|null;parent_url?:string|null;text?:string;author:{fid?:number;username?:string;display_name?:string;pfp_url?:string;custody_address?:string;score?:number;follower_count?:number;registered_at?:string;verified_addresses?:{primary?:{eth_address?:string};eth_addresses?:string[]}};reactions?:{likes_count?:number;recasts_count?:number};replies?:{count?:number}};
 
 function creator(cast:NeynarCast):Address|null{
   const candidate=cast.author.verified_addresses?.primary?.eth_address??cast.author.verified_addresses?.eth_addresses?.[0]??cast.author.custody_address;
@@ -49,15 +50,15 @@ function eligible(cast:NeynarCast,now:number,policy:DiscoveryPolicy){
     && qualifiesForDiscovery(cast,now,policy);
 }
 
-async function neynarFeed(apiKey:string,requestedHash?:string){
+async function neynarFeed(apiKey:string,requestedIdentifier?:string){
   const fetchCasts=async(url:URL)=>{
     const response=await fetch(url,{headers:{"x-api-key":apiKey,"x-neynar-experimental":"true"},cache:"no-store"});
     if(!response.ok)throw new Error(`Neynar discovery returned ${response.status}`);
     const payload=await response.json() as {cast?:NeynarCast;casts?:NeynarCast[]};
     return payload.cast?[payload.cast]:(payload.casts??[]);
   };
-  if(requestedHash){
-    const url=new URL("https://api.neynar.com/v2/farcaster/cast");url.searchParams.set("identifier",requestedHash);url.searchParams.set("type","hash");
+  if(requestedIdentifier){
+    const url=new URL("https://api.neynar.com/v2/farcaster/cast");url.searchParams.set("identifier",requestedIdentifier);url.searchParams.set("type",/^0x[0-9a-fA-F]{40}$/.test(requestedIdentifier)?"hash":"url");
     return fetchCasts(url);
   }
   const sources=(process.env.MARKET_SOURCE_CHANNELS??"farcaster,monad,ethereum,builders").split(",").map(value=>value.trim()).filter(Boolean);
@@ -67,6 +68,57 @@ async function neynarFeed(apiKey:string,requestedHash?:string){
   }));
   const byHash=new Map(batches.flat().map(cast=>[cast.hash,cast]));
   return [...byHash.values()].sort((a,b)=>Date.parse(b.timestamp)-Date.parse(a.timestamp));
+}
+
+function category(cast:NeynarCast){
+  const value=cast.parent_url?.split("/").filter(Boolean).at(-1)??"Farcaster";
+  if(value.startsWith("erc721:"))return "Collectibles";
+  if(value.startsWith("erc20:"))return "Tokens";
+  return value.length>24?"Onchain":value.replaceAll("-"," ").replace(/\b\w/g,letter=>letter.toUpperCase());
+}
+
+function publicCandidate(cast:NeynarCast,now:number):MarketCandidate{
+  const username=cast.author.username??`fid-${cast.author.fid??0}`;
+  return {
+    hash:cast.hash as `0x${string}`,
+    author:{
+      fid:cast.author.fid??0,
+      username,
+      displayName:cast.author.display_name??username,
+      avatarUrl:cast.author.pfp_url??`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(username)}&backgroundColor=18181b`,
+    },
+    text:cast.text?.trim()??"",
+    timestamp:cast.timestamp,
+    ageMinutes:Math.max(0,Math.floor((now-Date.parse(cast.timestamp)/1000)/60)),
+    likes:cast.reactions?.likes_count??0,
+    recasts:cast.reactions?.recasts_count??0,
+    replies:cast.replies?.count??0,
+    category:category(cast),
+  };
+}
+
+async function discoverEligibleCasts(apiKey:string,requestedIdentifier?:string,limit=12){
+  const discovered=await neynarFeed(apiKey,requestedIdentifier);
+  const now=Math.floor(Date.now()/1000);
+  const policy=discoveryPolicy();
+  const casts=discovered
+    .filter(cast=>eligible(cast,now,policy))
+    .sort((a,b)=>discoveryPriority(b,now)-discoveryPriority(a,now))
+    .slice(0,limit);
+  return {discovered:discovered.length,now,casts};
+}
+
+export async function getEligibleMarketCandidates(requestedIdentifier?:string){
+  const apiKey=process.env.NEYNAR_API_KEY;
+  const contract=process.env.NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS as Address|undefined;
+  if(!apiKey||!contract)throw new Error("Market candidate environment is incomplete");
+  const result=await discoverEligibleCasts(apiKey,requestedIdentifier);
+  const candidates=(await Promise.all(result.casts.map(async cast=>{
+    const castHash=padHex(cast.hash as Hex,{size:32,dir:"right"});
+    const existing=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"marketIdByCastHash",args:[castHash]});
+    return existing===0n?publicCandidate(cast,result.now):null;
+  }))).filter((candidate):candidate is MarketCandidate=>candidate!==null);
+  return {discovered:result.discovered,eligible:result.casts.length,candidates};
 }
 
 async function active24HourEpoch(contract:Address,now:bigint){
@@ -80,7 +132,7 @@ async function active24HourEpoch(contract:Address,now:bigint){
   return null;
 }
 
-export async function openEligibleMarkets(requestedHash?:string){
+export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets=Number(process.env.MAX_MARKETS_PER_RUN??5),epochMarketCap?:number){
   const key=(process.env.MARKET_OPENER_PRIVATE_KEY??process.env.DEPLOYER_PRIVATE_KEY) as Hex|undefined;
   const apiKey=process.env.NEYNAR_API_KEY;
   const contract=process.env.NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS as Address|undefined;
@@ -89,15 +141,28 @@ export async function openEligibleMarkets(requestedHash?:string){
   const account=privateKeyToAccount(key);
   const wallet=createWalletClient({account,chain:monad,transport:http(rpc)});
   const now=BigInt(Math.floor(Date.now()/1000));
-  const discovered=await neynarFeed(apiKey,requestedHash);
-  const nowSeconds=Number(now);
-  const policy=discoveryPolicy();
-  const candidates=discovered
-    .filter(cast=>eligible(cast,nowSeconds,policy))
-    .sort((a,b)=>discoveryPriority(b,nowSeconds)-discoveryPriority(a,nowSeconds))
-    .slice(0,Number(process.env.MAX_MARKETS_PER_RUN??5));
-  if(!candidates.length)return {epochId:null,discovered:discovered.length,eligible:0,opened:[],skipped:[]};
+  const discovery=await discoverEligibleCasts(apiKey,requestedIdentifier,Math.max(1,maxMarkets));
+  const candidates=discovery.casts;
+  if(!candidates.length)return {epochId:null,discovered:discovery.discovered,eligible:0,opened:[],skipped:[]};
   let epochId=await active24HourEpoch(contract,now);
+  if(epochId&&epochMarketCap){
+    const epoch=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"epochs",args:[epochId]});
+    if(Number(epoch[3])>=epochMarketCap)return {epochId:epochId.toString(),discovered:discovery.discovered,eligible:candidates.length,opened:[],skipped:candidates.map(cast=>({hash:cast.hash,reason:`public epoch limit ${epochMarketCap} reached`}))};
+  }
+  const skipped:Array<{hash:string;reason:string}>=[];
+  const prepared:Array<{cast:NeynarCast;castHash:Hex;castCreator:Address;baseline:bigint}>=[];
+  for(const cast of candidates){
+    const castHash=padHex(cast.hash as Hex,{size:32,dir:"right"});
+    const existing=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"marketIdByCastHash",args:[castHash]});
+    if(existing!==0n){skipped.push({hash:cast.hash,reason:`already market ${existing}`});continue;}
+    const castCreator=creator(cast);
+    if(!castCreator){skipped.push({hash:cast.hash,reason:"no EVM creator address"});continue;}
+    try{
+      const interactions=await collectQualifiedInteractions(cast.hash,Number(now),apiKey);
+      prepared.push({cast,castHash,castCreator,baseline:encodeQualityBaseline(qualifiedInteractionScore(interactions))});
+    }catch{skipped.push({hash:cast.hash,reason:"qualified baseline unavailable"});}
+  }
+  if(!prepared.length)return {epochId:epochId?.toString()??null,discovered:discovery.discovered,eligible:candidates.length,opened:[],skipped};
   let epochTransaction:Hex|undefined;
   if(!epochId){
     const count=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"epochCount"});
@@ -105,27 +170,13 @@ export async function openEligibleMarkets(requestedHash?:string){
     epochTransaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"createEpoch",args:[Number(now),Number(now+86_400n)],value:parseEther(process.env.MARKET_EPOCH_SEED_MON??"1")});
     await monadClient.waitForTransactionReceipt({hash:epochTransaction});
   }
-  const opened:Array<{hash:string;transaction:Hex}>=[];
-  const skipped:Array<{hash:string;reason:string}>=[];
-  for(const cast of candidates){
-    const castHash=padHex(cast.hash as Hex,{size:32,dir:"right"});
-    const existing=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"marketIdByCastHash",args:[castHash]});
-    if(existing!==0n){skipped.push({hash:cast.hash,reason:`already market ${existing}`});continue;}
-    const castCreator=creator(cast);
-    if(!castCreator){skipped.push({hash:cast.hash,reason:"no EVM creator address"});continue;}
-    let baseline:bigint;
-    try{
-      const interactions=await collectQualifiedInteractions(cast.hash,Number(now),apiKey);
-      baseline=encodeQualityBaseline(qualifiedInteractionScore(interactions));
-    }catch{
-      skipped.push({hash:cast.hash,reason:"qualified baseline unavailable"});
-      continue;
-    }
+  const opened:Array<{hash:string;transaction:Hex;candidate:MarketCandidate}>=[];
+  for(const {cast,castHash,castCreator,baseline} of prepared){
     const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"openMarket",args:[epochId,castHash,castCreator,baseline]});
     await monadClient.waitForTransactionReceipt({hash:transaction});
-    opened.push({hash:cast.hash,transaction});
+    opened.push({hash:cast.hash,transaction,candidate:publicCandidate(cast,discovery.now)});
   }
-  return {epochId:epochId.toString(),epochTransaction,discovered:discovered.length,eligible:candidates.length,opened,skipped};
+  return {epochId:epochId.toString(),epochTransaction,discovered:discovery.discovered,eligible:candidates.length,opened,skipped};
 }
 
 export async function maintainMarkets(){

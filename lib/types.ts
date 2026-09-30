@@ -53,6 +53,18 @@ export interface CastMarket {
   scoutPreview?: ScoutIdentity[];
 }
 
+export interface MarketCandidate {
+  hash: `0x${string}`;
+  author: CastAuthor;
+  text: string;
+  timestamp: string;
+  ageMinutes: number;
+  likes: number;
+  recasts: number;
+  replies: number;
+  category: string;
+}
+
 export interface ScoutPosition {
   marketId: string;
   author: string;

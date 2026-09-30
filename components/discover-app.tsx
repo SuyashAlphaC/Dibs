@@ -6,11 +6,12 @@ import {Icon} from "@/components/shared/icons";
 import {Avatar} from "@/components/shared/avatar";
 import {useIdentity} from "@/components/identity-provider";
 import {markets as seedMarkets} from "@/lib/mock/markets";
-import type {CastMarket} from "@/lib/types";
+import type {CastMarket,MarketCandidate} from "@/lib/types";
 import {scoutTransaction} from "@/lib/contract";
 import {MetricCard} from "@/components/dashboard/metric-card";
 import {MobileDibsStack} from "@/components/feed/mobile-dibs-stack";
 import {ShareReceiptButton} from "@/components/shared/share-receipt-button";
+import {MarketCandidateStrip} from "@/components/feed/market-candidate-strip";
 
 type ModalState = {market:CastMarket;state:"confirm"|"pending"|"error";error?:string}|null;
 
@@ -34,6 +35,7 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
   const [recentId,setRecentId] = useState<string|null>(null);
   const [mobileView,setMobileView]=useState<"stack"|"feed">("stack");
   const [receipt,setReceipt]=useState<{market:CastMarket;rank:number}|null>(null);
+  const [refreshSignal,setRefreshSignal]=useState(0);
   const categories = ["All","AI","Crypto","Social","Culture"];
   const query=initialQuery.trim().toLowerCase();
   const visible = useMemo(()=>marketList.filter((market)=>{
@@ -66,7 +68,16 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
     refresh();
     const interval=window.setInterval(refresh,15000);
     return()=>{controller.abort();window.clearInterval(interval);};
-  },[identity.address,identity.farcaster?.fid]);
+  },[identity.address,identity.farcaster?.fid,refreshSignal]);
+
+  function marketOpened(candidate:MarketCandidate,transaction:string){
+    setToast(`${candidate.author.displayName}'s market is confirmed. Envio is indexing the signal now.`);
+    setRefreshSignal(value=>value+1);
+    window.setTimeout(()=>setRefreshSignal(value=>value+1),5_000);
+    window.setTimeout(()=>setRefreshSignal(value=>value+1),12_000);
+    window.setTimeout(()=>setToast(null),12_000);
+    console.info("Dibs market opened",{hash:candidate.hash,transaction});
+  }
 
   function startDibs(market:CastMarket) {
     if(!/^\d+$/.test(market.id)){
@@ -100,6 +111,7 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
       <div className="rpc-chip"><Icon name="spark"/><span>Monad + Envio</span><strong>{dataSource==="envio"?"Synced":"Preview"}</strong></div>
     </section>
     {(!identity.authenticated||Number(identity.balance??0)<0.01)&&<section className="onboarding-strip" aria-label="Get ready to call Dibs"><div><span>01</span><strong>{identity.authenticated?"Wallet connected":"Connect a wallet"}</strong><small>{identity.authenticated?"Identity ready on Monad Testnet":"Privy creates one if you need it"}</small></div><div><span>02</span><strong>Get testnet MON</strong><small>Only the conviction amount is at stake</small></div><div><span>03</span><strong>{identity.gasSponsored?"Gas sponsored":"Gas checked before signing"}</strong><small>{identity.gasSponsored?"Privy pays the network fee":"Your wallet shows any network fee"}</small></div><div className="onboarding-actions">{!identity.authenticated&&<button onClick={identity.login}>Connect wallet</button>}<a href="https://faucet.monad.xyz/" target="_blank" rel="noreferrer">Open official faucet ↗</a></div></section>}
+    <MarketCandidateStrip onMarketOpened={marketOpened}/>
     <section className="metric-grid">
       <MetricCard label="Active markets" value={String(activeMarkets.length)} detail="24 hour windows" points={[3,6,5,9,8,12,11,14]} />
       <MetricCard label="Total conviction" value={`${totalConviction.toFixed(2)} MON`} detail="Across live signals" tone="pink" points={[4,5,4,8,7,11,10,14]} />
