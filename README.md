@@ -99,7 +99,7 @@ top-of-hour congestion window. Farcaster ownership for `dibs-metropolis.vercel.a
 association is stored in Vercel and served through the production manifest.
 
 The CRE settlement keeper is defined in `.github/workflows/cre-settlement.yml`. Configure the
-`MONAD_RPC_URL` and `CRE_RECEIVER_OWNER_PRIVATE_KEY` repository secrets plus the four public
+`MONAD_RPC_URL`, `CRE_RECEIVER_OWNER_PRIVATE_KEY`, and `CRE_API_KEY` repository secrets plus the four public
 contract-address repository variables used by that workflow. Set the repository variable
 `CRE_SETTLEMENT_AUTOMATION_ENABLED=true` only after those values are present. A run with an empty observation
 queue is a successful no-op. The workflow installs the checksummed CRE CLI using Chainlink's
