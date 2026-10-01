@@ -111,18 +111,20 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
   }
 
   return <div className={`discover-page mobile-${mobileView}`}>
-    <section className="discover-hero terminal-hero">
-      <div><p className="eyebrow">Live social discovery</p><h1>Farcaster Discovery for Early Casts</h1><h2>Find what&apos;s about to matter before it trends.</h2><p><i className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Live casts ranked by scout conviction":dataSource==="demo"?"Preview markets · transactions disabled":dataSource==="loading"?"Connecting to the live Envio index…":"Live market service is temporarily unavailable"}</p></div>
+    <section className="discover-hero terminal-hero moat-hero">
+      <div><p className="eyebrow">The conviction feed · Farcaster × Monad</p><h1>The market for what matters next.</h1><h2>Spot an early cast. Put conviction behind it. Build a reputation for being right before the crowd.</h2><p><i className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Ranked by real scout positions · settled by quality attention":dataSource==="demo"?"Preview markets · transactions disabled":dataSource==="loading"?"Connecting to the live Envio index…":"Live market service is temporarily unavailable"}</p></div>
       <div className="rpc-chip"><Icon name="spark"/><span>Monad + Envio</span><strong>{dataSource==="envio"?"Synced":dataSource==="demo"?"Preview":dataSource==="loading"?"Connecting":"Unavailable"}</strong></div>
     </section>
+    <section className="moat-flow" aria-label="How a Dibs signal market works"><div><b>01</b><span>Early cast</span><small>Eligible Farcaster signal</small></div><i>→</i><div><b>02</b><span>Scouts commit</span><small>MON proves conviction</small></div><i>→</i><div><b>03</b><span>Signal ranks</span><small>Collective belief moves feed</small></div><i>→</i><div><b>04</b><span>Quality settles</span><small>Reputation records the call</small></div></section>
     {(!identity.authenticated||Number(identity.balance??0)<0.01)&&<section className="onboarding-strip" aria-label="Get ready to call Dibs"><div><span>01</span><strong>{identity.authenticated?"Wallet connected":"Connect a wallet"}</strong><small>{identity.authenticated?"Identity ready on Monad Testnet":"Privy creates one if you need it"}</small></div><div><span>02</span><strong>Get testnet MON</strong><small>Only the conviction amount is at stake</small></div><div><span>03</span><strong>{identity.gasSponsored?"Gas sponsored":"Gas checked before signing"}</strong><small>{identity.gasSponsored?"Privy pays the network fee":"Your wallet shows any network fee"}</small></div><div className="onboarding-actions">{!identity.authenticated&&<button onClick={identity.login}>Connect wallet</button>}<a href="https://faucet.monad.xyz/" target="_blank" rel="noreferrer">Open official faucet ↗</a></div></section>}
     <MarketCandidateStrip onMarketOpened={marketOpened}/>
     <section className="metric-grid">
-      <MetricCard label="Active markets" value={String(activeMarkets.length)} detail="24 hour windows" points={[3,6,5,9,8,12,11,14]} />
-      <MetricCard label="Total conviction" value={`${totalConviction.toFixed(2)} MON`} detail="Across live signals" tone="pink" points={[4,5,4,8,7,11,10,14]} />
-      <MetricCard label="Scouts active" value={String(totalScouts)} detail="Unique early calls" tone="green" points={[3,4,7,6,9,8,11,13]} />
-      <MetricCard label="Your Dibs" value={String(marketList.filter(market=>market.userHasDibs).length)} detail="Confirmed positions" points={[2,2,3,5,4,7,7,9]} />
+      <MetricCard label="Live signal markets" value={String(activeMarkets.length)} detail="24-hour discovery windows" points={[3,6,5,9,8,12,11,14]} />
+      <MetricCard label="Scout conviction" value={`${totalConviction.toFixed(2)} MON`} detail="Capital committed to taste" tone="pink" points={[4,5,4,8,7,11,10,14]} />
+      <MetricCard label="Early calls" value={String(totalScouts)} detail="Onchain scout positions" tone="green" points={[3,4,7,6,9,8,11,13]} />
+      <MetricCard label="Your positions" value={String(marketList.filter(market=>market.userHasDibs).length)} detail="Reputation in progress" points={[2,2,3,5,4,7,7,9]} />
     </section>
+    <div className="conviction-feed-heading"><div><p className="eyebrow">Live information markets</p><h2>Conviction feed</h2></div><p>Rank is driven by scout stake—not likes. Social engagement only determines the outcome after the window closes.</p></div>
     <section className="feed-controls">
       <div className="mode-tabs">{["trending","early","opened"].map((item)=><button key={item} className={mode===item?"active":""} onClick={()=>setMode(item)}>{item==="opened"?"New":item==="early"?"Early":"All"}</button>)}</div>
       <div className="category-filter">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
@@ -140,11 +142,12 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
     {modal&&<div className="modal-backdrop" role="presentation" onMouseDown={(event)=>event.target===event.currentTarget&&setModal(null)}><section className="dibs-modal" role="dialog" aria-modal="true" aria-labelledby="dibs-title">
       <button className="modal-close" onClick={()=>setModal(null)} aria-label="Close"><Icon name="close"/></button>
       {modal.state==="pending"?<div className="modal-status"><span className="loading-orbit"/><h2>Confirming on Monad…</h2><p>Keep this window open while your transaction is mined.</p></div>:modal.state==="error"?<div className="modal-status"><span className="error-mark">!</span><h2>That didn’t go through</h2><p>{modal.error}</p><button className="primary-button" onClick={()=>setModal({...modal,state:"confirm",error:undefined})}>Try again</button></div>:<>
-        <div className="modal-icon"><Icon name="spark"/></div><p className="eyebrow">Confirm your signal</p><h2 id="dibs-title">Call Dibs on this cast?</h2>
+        <div className="modal-icon"><Icon name="spark"/></div><p className="eyebrow">Open a scout position</p><h2 id="dibs-title">Back this signal?</h2>
         <div className="modal-cast"><div><Avatar name={modal.market.author.displayName} size={30}/><span><strong>{modal.market.author.displayName}</strong><small>@{modal.market.author.username}</small></span></div><p>“{modal.market.text.slice(0,125)}…”</p></div>
-        <div className="confirm-grid"><div><span>Your conviction</span><strong>{modal.market.nextUnitCost.toFixed(3)} MON</strong></div><div><span>Current rank</span><strong>#{modal.market.rank}</strong></div><div><span>Market conviction</span><strong className="positive">{modal.market.totalStaked.toFixed(3)} MON</strong></div></div>
-        <p className="modal-note">If the cast sustains quality attention, early scouts share the reward.</p>
-        <button className="primary-button" onClick={confirmDibs} disabled={!identity.ready}>{!identity.ready?"Loading wallet…":identity.authenticated&&identity.walletReady?`Confirm Dibs · ${modal.market.nextUnitCost.toFixed(3)} MON`:"Connect wallet to confirm"}</button>
+        <div className="confirm-grid"><div><span>Your conviction</span><strong>{modal.market.nextUnitCost.toFixed(3)} MON</strong></div><div><span>Your entry</span><strong>Scout #{modal.market.totalUnits+1}</strong></div><div><span>Signal rank</span><strong className="positive">#{modal.market.rank}</strong></div></div>
+        <div className="modal-market-logic"><span>Early position</span><i>→</i><span>Quality attention</span><i>→</i><span>Scout reputation</span></div>
+        <p className="modal-note">Your position is at risk. If this cast earns quality attention, earlier scouts receive a larger share and a verified reputation result.</p>
+        <button className="primary-button" onClick={confirmDibs} disabled={!identity.ready}>{!identity.ready?"Loading wallet…":identity.authenticated&&identity.walletReady?`Confirm position · ${modal.market.nextUnitCost.toFixed(3)} MON`:"Connect wallet to continue"}</button>
       </>}
     </section></div>}
     {toast&&<div className="toast" role="status"><span><Icon name="check"/></span><div><p>{toast}</p>{receipt&&<ShareReceiptButton market={receipt.market} rank={receipt.rank}/>}</div><button onClick={()=>{setToast(null);setReceipt(null);}} aria-label="Dismiss"><Icon name="close"/></button></div>}

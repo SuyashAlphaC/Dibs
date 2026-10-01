@@ -1,0 +1,131 @@
+/* Dibs conviction-market layer — product language made visible. */
+:root{
+  --signal:#9b86ff;
+  --signal-soft:rgba(155,134,255,.12);
+  --signal-line:rgba(155,134,255,.28);
+  --proof:#65d6aa;
+  --warm:#f1b86a;
+}
+
+/* Shell: a calm information market, not a generic social dashboard. */
+.topbar{height:76px;background:rgba(0,0,0,.96)}
+.app-grid{padding-top:76px;grid-template-columns:232px minmax(0,1fr) 326px}
+.left-rail,.right-rail{top:76px;height:calc(100dvh - 76px)}
+.brand-mantra{display:block;margin:0 0 0 12px;padding-left:15px;border-left:1px solid var(--line);color:var(--muted);font:500 8px/1.45 var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
+.brand-network{display:none}
+.topnav a{font-size:12px;white-space:nowrap}
+.side-nav a{height:51px}
+.side-nav a.active{border-color:var(--signal-line);background:linear-gradient(90deg,var(--signal-soft),rgba(155,134,255,.04));color:#c8bdff}
+.reputation-mini{position:relative;overflow:hidden;background:linear-gradient(145deg,#08080b,#030304)}
+.reputation-mini:after{content:"";position:absolute;right:-20px;bottom:-30px;width:76px;height:76px;border:1px solid var(--signal-line);border-radius:50%}
+
+/* Hero: the moat in one sentence and one causal path. */
+.moat-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;padding-bottom:20px}
+.moat-hero h1{max-width:920px;font-size:clamp(42px,4vw,64px);line-height:.98;letter-spacing:-.055em}
+.moat-hero h2{max-width:720px;margin:13px 0 14px;color:#b9b7c0;font-size:16px;line-height:1.5}
+.moat-hero .eyebrow{color:var(--signal);font-family:var(--font-mono);font-weight:600!important}
+.rpc-chip{align-self:end}
+.moat-flow{display:grid;grid-template-columns:1fr 20px 1fr 20px 1fr 20px 1fr;align-items:center;margin:0 0 16px;border:1px solid var(--line);border-radius:14px;background:#040405;overflow:hidden}
+.moat-flow>div{display:grid;grid-template-columns:auto 1fr;column-gap:10px;min-height:68px;padding:13px 14px;align-content:center}
+.moat-flow b{grid-row:1/3;color:var(--signal);font:600 10px var(--font-mono)}
+.moat-flow span{color:var(--text);font-size:11px;font-weight:600!important}
+.moat-flow small{margin-top:3px;color:var(--faint);font-size:9px}
+.moat-flow>i{color:#45424f;font-style:normal;text-align:center}
+
+.conviction-feed-heading{display:flex;align-items:end;justify-content:space-between;gap:28px;margin:24px 0 11px;padding-top:21px;border-top:1px solid var(--line)}
+.conviction-feed-heading .eyebrow{margin:0 0 5px;color:var(--signal);font-size:9px}
+.conviction-feed-heading h2{margin:0;font-size:25px;letter-spacing:-.035em}
+.conviction-feed-heading>p{max-width:420px;margin:0;color:var(--muted);font-size:10px;line-height:1.55;text-align:right}
+.feed-controls{margin-top:0}
+
+/* The signal card is the core product surface. */
+.market-feed{gap:14px}
+.market-card.conviction-market{min-height:500px;padding:0;border-color:rgba(255,255,255,.095);background:linear-gradient(155deg,#08080a 0%,#040405 72%);overflow:hidden}
+.market-card.conviction-market:hover{border-color:var(--signal-line);background:linear-gradient(155deg,#0a0a0d 0%,#050506 72%)}
+.conviction-market .card-topline{display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:9px;height:48px;margin:0;padding:0 16px;border-bottom:1px solid var(--line)}
+.market-rank{display:grid;place-items:center;min-width:40px;height:26px;border-radius:7px;background:var(--signal);color:#070709;font:700 12px var(--font-mono)}
+.conviction-market .taste-rank{justify-self:end;letter-spacing:.05em;text-transform:uppercase}
+.conviction-market .cast-body{padding:16px 17px 0}
+.conviction-market .cast-text{min-height:82px;margin:15px 0 10px;color:#f0eff4;font-size:15px;font-weight:500!important;line-height:1.48}
+.conviction-market .scout-proof{order:3;margin:2px 0 10px}
+.conviction-market .social-proof{order:2;margin:0;padding:8px 0;border-top:1px solid var(--line);border-bottom:0}
+.conviction-market .market-thesis{order:4;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:11px;background:#020203;overflow:hidden}
+.market-thesis>div{display:flex;min-width:0;flex-direction:column;padding:11px}
+.market-thesis>div+div{border-left:1px solid var(--line)}
+.market-thesis span{color:var(--faint);font-size:8px;letter-spacing:.05em;text-transform:uppercase}
+.market-thesis strong{margin-top:5px;overflow:hidden;color:var(--text);font-size:12px;text-overflow:ellipsis;white-space:nowrap}
+.market-thesis small{margin-top:3px;color:var(--muted);font-size:8px}
+.conviction-meter{order:5;padding:13px 0 8px}
+.conviction-meter>div:first-child{display:flex;align-items:baseline;justify-content:space-between}
+.conviction-meter span{color:var(--muted);font-size:9px}
+.conviction-meter strong{color:#d2caff;font:600 15px var(--font-mono)}
+.conviction-meter .earliness-track{height:4px;margin:8px 0;background:#15141a}
+.conviction-meter .earliness-track i{background:linear-gradient(90deg,#6046e8,var(--signal),#c2b7ff)}
+.conviction-meter small{display:block;color:var(--faint);font-size:8px}
+.conviction-market .card-lower-data{order:6;margin-top:auto;border-top:1px solid var(--line)}
+.conviction-market .seed-disclosure{order:7}
+.conviction-market .card-action{display:flex;flex-direction:column;gap:8px;margin:0;padding:0 17px 16px}
+.conviction-market .card-action button{height:47px;background:linear-gradient(135deg,#8169f4,#9b86ff);font-size:11px;font-weight:600!important}
+.conviction-market .card-action button:hover{background:linear-gradient(135deg,#907bf8,#ac9aff)}
+.action-context{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--faint);font-size:8px}
+.action-context>a{flex:none;color:var(--muted);font-size:9px}
+.action-context>a:hover{color:var(--signal)}
+
+/* Right rail: live market evidence rather than generic trends. */
+.right-rail{background:#010102}
+.rail-heading{font-size:18px;letter-spacing:-.025em}
+.rail-heading em{color:var(--signal)}
+.rail-kicker{margin:11px 0 4px;color:var(--faint);font-size:9px;line-height:1.5}
+.moment-row>a{position:relative;min-width:52px}
+.moment-row>a small{position:absolute;right:-2px;top:27px;padding:2px 4px;border-radius:4px;background:#111018;color:#bdb2ff;font:600 7px var(--font-mono)}
+.rank-logic{display:grid;margin:18px 0 24px;padding:14px;border:1px solid var(--signal-line);border-radius:12px;background:linear-gradient(145deg,rgba(155,134,255,.1),rgba(155,134,255,.025))}
+.rank-logic>span{margin-bottom:10px;color:var(--signal);font:600 8px var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
+.rank-logic strong{font-size:11px}
+.rank-logic i{margin:2px 0 8px;color:var(--muted);font-size:9px;font-style:normal}
+.rank-logic i:last-child{margin-bottom:0}
+.topic-cloud a{border-radius:8px}
+.closing-card{background:linear-gradient(145deg,#070708,#030303)}
+.rail-summary{background:linear-gradient(145deg,rgba(155,134,255,.12),rgba(155,134,255,.035))}
+
+/* Details and settlement: trace the same signal lifecycle. */
+.detail-cast{position:relative;overflow:hidden;background:linear-gradient(155deg,#08080a,#030304)}
+.detail-cast:before{content:"CAST / PRIMARY SIGNAL";display:block;margin-bottom:16px;color:var(--signal);font:600 8px var(--font-mono);letter-spacing:.1em}
+.detail-cast>p{font-size:17px;line-height:1.55}
+.detail-metrics>div:first-child,.settlement-metrics>div:last-child{border-color:var(--signal-line)!important;background:var(--signal-soft)!important}
+.chart-panel,.leaderboard,.stake-panel{background:linear-gradient(155deg,#060608,#020202)}
+.sticky-stake{border-color:var(--signal-line);box-shadow:0 20px 55px rgba(0,0,0,.35)}
+.sticky-stake h2:after{content:"Your stake is a public prediction.";display:block;margin-top:7px;color:var(--muted);font:400 9px/1.4 var(--font-body)}
+.settlement-reveal .reveal-score{border-color:var(--signal-line);background:var(--signal-soft)}
+.settlement-page>.lifecycle-actions{border-color:var(--signal-line)}
+
+/* The confirmation must explain the product before asking for a signature. */
+.dibs-modal{background:linear-gradient(155deg,#0b0b0e,#050506)}
+.dibs-modal h2{letter-spacing:-.04em}
+.modal-market-logic{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;margin:14px 0;padding:11px;border:1px solid var(--signal-line);border-radius:10px;background:var(--signal-soft);color:var(--muted);font-size:8px;text-align:center}
+.modal-market-logic i{color:var(--signal);font-style:normal}
+
+@media(max-width:1499px){
+  .app-grid{grid-template-columns:216px minmax(0,1fr) 292px}
+  .brand-mantra{display:none}
+}
+@media(max-width:1199px){
+  .app-grid{grid-template-columns:216px minmax(0,1fr)}
+}
+@media(max-width:899px){
+  .app-grid{grid-template-columns:1fr}
+  .moat-hero h1{font-size:48px}
+}
+@media(max-width:767px){
+  .topbar{height:62px}.app-grid{padding-top:62px}
+  .moat-hero{display:block}.moat-hero h1{font-size:36px}.moat-hero h2{font-size:14px}
+  .moat-flow{grid-template-columns:1fr 1fr}.moat-flow>i{display:none}.moat-flow>div:nth-of-type(odd){border-right:1px solid var(--line)}.moat-flow>div:nth-of-type(-n+2){border-bottom:1px solid var(--line)}
+  .conviction-feed-heading{align-items:start;flex-direction:column;gap:8px}.conviction-feed-heading>p{text-align:left}
+  .market-card.conviction-market{min-height:0}
+  .conviction-market .market-thesis{grid-template-columns:repeat(3,1fr)}
+  .conviction-market .card-action{grid-column:auto;padding:0 17px 16px;border:0}
+  .action-context{align-items:flex-start;flex-direction:column}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .market-card.conviction-market:hover{transform:none}
+}

@@ -11,8 +11,10 @@ export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMar
   const scoutProof=scout
     ? `${scout.followedByViewer?"You follow ":""}${scout.username?`@${scout.username}`:scout.displayName}${market.newScouts>1?` · +${market.newScouts-1} more`:""} called this`
     : market.newScouts?`${market.newScouts} verified wallet scout${market.newScouts===1?"":"s"} called this`:"First call is open";
-  return <article className={`market-card ${justDibsed?"just-dibsed":""} status-${market.status}`} style={{viewTransitionName:`market-${market.id}`}}>
-    <div className="card-topline"><span className={`status-pill ${market.status}`}><i/>{market.status==="active"?(market.ageMinutes<30?"Early":"Live"):market.status}</span><span className="taste-rank">Signal #{String(market.rank).padStart(2,"0")}</span></div>
+  const entryPosition=market.totalUnits+1;
+  const earlinessLabel=market.ageMinutes<30?"First wave":market.ageMinutes<360?"Early":"Established";
+  return <article className={`market-card conviction-market ${justDibsed?"just-dibsed":""} status-${market.status}`} style={{viewTransitionName:`market-${market.id}`}}>
+    <div className="card-topline"><span className="market-rank">#{String(market.rank).padStart(2,"0")}</span><span className={`status-pill ${market.status}`}><i/>{market.status==="active"?"Market live":market.status}</span><span className="taste-rank">24h signal market</span></div>
     <div className="cast-body">
       <div className="author-row">
         <Avatar name={market.author.displayName} src={market.author.avatarUrl} size={34}/>
@@ -21,13 +23,14 @@ export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMar
       <Link className="cast-text" href={`/market/${market.id}`}>{market.text}</Link>
       <div className="scout-proof"><div className="scout-proof-avatars">{market.scoutPreview?.slice(0,3).map(identity=><Avatar key={identity.address} name={identity.displayName} src={identity.avatarUrl} size={24}/>)}</div><span>{scoutProof}</span></div>
       <div className="social-proof"><span>♡ {market.likes}</span><span>↻ {market.recasts}</span><span>◌ {market.replies}</span><span>{market.category}</span></div>
-      <div className="earliness-block"><div className="earliness-heading"><span>Earliness</span><strong>{market.ageMinutes<30?"Fresh":market.ageMinutes<360?"Early":"Established"}</strong></div><div className="earliness-track"><i style={{width:`${elapsed}%`}}/></div><div className="earliness-stats"><div><span>Age</span><strong>{formatAgeMinutes(market.ageMinutes)}</strong></div><div><span>Scouts</span><strong>{market.newScouts}</strong></div><div><span>Next unit</span><strong>{market.nextUnitCost.toFixed(3)} MON</strong></div></div></div>
-      <div className="card-lower-data"><span>Scout conviction <b>{market.totalStaked.toFixed(3)} MON</b></span><span>{market.timeLeftMinutes?`${Math.floor(market.timeLeftMinutes/60)}h ${market.timeLeftMinutes%60}m left`:market.status}</span></div>
+      <div className="market-thesis" aria-label="Signal market state"><div><span>Earliness</span><strong>{earlinessLabel}</strong><small>{formatAgeMinutes(market.ageMinutes)} old</small></div><div><span>Consensus</span><strong>{market.newScouts} scout{market.newScouts===1?"":"s"}</strong><small>{market.totalUnits} conviction units</small></div><div><span>Your entry</span><strong>#{entryPosition}</strong><small>{market.nextUnitCost.toFixed(3)} MON</small></div></div>
+      <div className="conviction-meter"><div><span>Collective conviction</span><strong>{market.totalStaked.toFixed(3)} MON</strong></div><div className="earliness-track"><i style={{width:`${elapsed}%`}}/></div><small>Earlier conviction receives a larger share of the scout side</small></div>
+      <div className="card-lower-data"><span>{market.timeLeftMinutes?`${Math.floor(market.timeLeftMinutes/60)}h ${market.timeLeftMinutes%60}m until settlement`:market.status}</span><span>Quality-weighted outcome</span></div>
       <p className="seed-disclosure">Community seed {market.communitySeed.toFixed(3)} MON · excluded from rank</p>
     </div>
     <div className="card-action">
-      <button disabled={disabled||market.userHasDibs} onClick={()=>onDibs(market)}>{market.userHasDibs?"Dibs called":disabled?market.status:`Dibs · ${market.nextUnitCost.toFixed(3)} MON → est. ${projectedScoutShare.toFixed(projectedScoutShare<10?1:0)}% scout share`}</button>
-      <Link href={`/market/${market.id}`}>View market <span>→</span></Link>
+      <button disabled={disabled||market.userHasDibs} onClick={()=>onDibs(market)}>{market.userHasDibs?"Position confirmed":disabled?market.status:`Back this signal · ${market.nextUnitCost.toFixed(3)} MON`}</button>
+      <div className="action-context"><span>Enter as scout #{entryPosition} · est. {projectedScoutShare.toFixed(projectedScoutShare<10?1:0)}% scout share</span><Link href={`/market/${market.id}`}>Open market <span>→</span></Link></div>
     </div>
   </article>;
 }

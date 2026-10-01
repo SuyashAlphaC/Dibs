@@ -11,10 +11,10 @@ import type {CastMarket,LiveScoutSignal} from "@/lib/types";
 import {ScoutAssistant} from "@/components/scout-assistant";
 
 const nav = [
-  {href:"/discover",label:"Discover",icon:"discover" as const},
-  {href:"/dibs",label:"My Dibs",icon:"dibs" as const},
-  {href:"/activity",label:"Activity",icon:"activity" as const},
-  {href:"/profile",label:"Scouts",icon:"profile" as const},
+  {href:"/discover",label:"Conviction Feed",icon:"discover" as const},
+  {href:"/dibs",label:"My Positions",icon:"dibs" as const},
+  {href:"/activity",label:"Market Tape",icon:"activity" as const},
+  {href:"/profile",label:"Scout Network",icon:"profile" as const},
 ];
 
 export function AppShell({children}: {children: React.ReactNode}) {
@@ -44,7 +44,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
     <header className="topbar">
       <div className="brand-cluster">
         <Link href="/discover" className="brand" aria-label="Dibs home"><img className="brand-logo" src="/dibs_logo.png" alt="Dibs Farcaster discovery" width="92" height="54" decoding="async" fetchPriority="high"/></Link>
-        <p className="brand-mantra">Social signals.<br/>Real conviction.<br/>Early wins.</p>
+        <p className="brand-mantra">Early signal.<br/>Real conviction.<br/>Verified taste.</p>
         <p className="brand-network">[Monad mainnet] <i/> <span>{markets.reduce((total,market)=>total+market.newScouts,0)} scouts online</span></p>
       </div>
       <nav className="topnav" aria-label="Primary navigation">
@@ -61,11 +61,11 @@ export function AppShell({children}: {children: React.ReactNode}) {
     <div className="app-grid">
       <aside className="left-rail">
         <nav className="side-nav" aria-label="App sections">
-          <p className="eyebrow">Workspace</p>
+          <p className="eyebrow">Conviction desk</p>
           {nav.map((item,index)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}><b>{String(index+1).padStart(2,"0")}</b><Icon name={item.icon}/><span>{item.label}</span><i>→</i></Link>)}
         </nav>
         <div className="reputation-mini">
-          <p className="eyebrow">Scout metric alpha</p><div><span>Signal score</span><strong>{identity.authenticated?score:"—"}</strong></div>
+          <p className="eyebrow">Scout reputation</p><div><span>Verified signal score</span><strong>{identity.authenticated?score:"—"}</strong></div>
           <div className="mini-progress"><i style={{width:`${Math.min(100,score/10)}%`}}/></div>
           <p>{identity.authenticated?`${dashboard?.calls??0} onchain calls`:"Connect to build reputation"}</p>
         </div>
@@ -74,13 +74,15 @@ export function AppShell({children}: {children: React.ReactNode}) {
       </aside>
       <main className="main-content" id="main-content" tabIndex={-1}>{children}<footer className="site-footer"><span>© 2026 Dibs · Social discovery on Monad</span><nav aria-label="Product and trust links"><Link href="/privacy">Privacy</Link><a href="https://github.com/SuyashAlphaC/Dibs" target="_blank" rel="noreferrer">Source</a><a href="https://github.com/SuyashAlphaC/Dibs/issues" target="_blank" rel="noreferrer">Contact</a><a href="/.well-known/security.txt">Security</a></nav></footer></main>
       <aside className="right-rail">
-        <div className="rail-heading"><div>Moments <em>&amp; Signals</em></div><Link href="/discover">View all</Link></div>
-        <div className="moment-row" role="list" tabIndex={0} aria-label="Recent onchain scout signals">{scoutSignals.map(signal=>{const label=signal.identity?.username?`@${signal.identity.username}`:signal.identity?.displayName||shortScout(signal.scout);return <Link role="listitem" aria-label={`Open scout ${label}`} title={`${label} · ${signal.spent.toFixed(3)} MON committed`} href={`/scout/${signal.scout}`} key={signal.scout}><Avatar name={label} src={signal.identity?.avatarUrl} size={38}/><span>{label.replace(/^@/,"").slice(0,8)}</span></Link>;})}{!scoutSignals.length&&<span className="moment-empty">No scout signals yet</span>}</div>
-        <p className="rail-section-label">Trending topics</p>
-        <div className="topic-cloud">{(topics.length?topics:["Farcaster","AI","Culture","Crypto","Builders"]).map(topic=><Link href={`/discover?topic=${encodeURIComponent(topic)}`} key={topic}>#{topic.toLowerCase().replaceAll(" ","")}</Link>)}</div>
-        <p className="rail-section-label">Closing soon</p>
+        <div className="rail-heading"><div>Conviction <em>tape</em></div><Link href="/activity">Full ledger</Link></div>
+        <p className="rail-kicker">Latest scouts putting MON behind an early call.</p>
+        <div className="moment-row" role="list" tabIndex={0} aria-label="Recent onchain scout positions">{scoutSignals.map(signal=>{const label=signal.identity?.username?`@${signal.identity.username}`:signal.identity?.displayName||shortScout(signal.scout);return <Link role="listitem" aria-label={`Open scout ${label}`} title={`${label} · ${signal.spent.toFixed(3)} MON committed`} href={`/scout/${signal.scout}`} key={signal.scout}><Avatar name={label} src={signal.identity?.avatarUrl} size={38}/><span>{label.replace(/^@/,"").slice(0,8)}</span><small>{signal.spent.toFixed(3)}</small></Link>;})}{!scoutSignals.length&&<span className="moment-empty">No scout positions yet</span>}</div>
+        <div className="rank-logic"><span>How the feed ranks</span><strong>Scout conviction</strong><i>sets discovery rank</i><strong>Quality attention</strong><i>settles the outcome</i></div>
+        <p className="rail-section-label">Signal sectors</p>
+        <div className="topic-cloud">{(topics.length?topics:["Farcaster","AI","Culture","Crypto","Builders"]).map(topic=><Link href={`/discover?topic=${encodeURIComponent(topic)}`} key={topic}>{topic}</Link>)}</div>
+        <p className="rail-section-label">Markets closing next</p>
         <div className="closing-list">{markets.slice().sort((a,b)=>a.timeLeftMinutes-b.timeLeftMinutes).slice(0,2).map(market=><Link href={`/market/${market.id}`} className="closing-card" key={market.id}><span className="status-pill active"><i/>Live</span><strong>{market.author.displayName}</strong><p>{market.text.slice(0,76)}{market.text.length>76?"…":""}</p><small>{market.timeLeftMinutes?`${Math.floor(market.timeLeftMinutes/60)}h ${market.timeLeftMinutes%60}m left`:market.status}</small></Link>)}</div>
-        <div className="rail-summary"><span>Your conviction</span><strong>{(dashboard?.spent??0).toFixed(3)} MON</strong><div><span>Rewards claimed</span><b>{(dashboard?.claimed??0).toFixed(3)} MON</b></div></div>
+        <div className="rail-summary"><span>Your open conviction</span><strong>{(dashboard?.spent??0).toFixed(3)} MON</strong><div><span>Verified scout rewards</span><b>{(dashboard?.claimed??0).toFixed(3)} MON</b></div></div>
       </aside>
     </div>
     <nav className="mobile-nav" aria-label="Mobile navigation">{nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}><Icon name={item.icon}/><span>{item.label}</span></Link>)}</nav>
