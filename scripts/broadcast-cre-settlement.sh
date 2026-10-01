@@ -9,6 +9,7 @@ PRODUCTION_RECEIVER="${CRE_SETTLEMENT_RECEIVER_ADDRESS:-0x78B87B938cbdd9453F2dA6
 SIMULATION_RECEIVER="${CRE_SIMULATION_RECEIVER_ADDRESS:-0x3D0AC36a876fB3bB077F115DC48F1Ae692BA7F01}"
 MOCK_FORWARDER="${CRE_MOCK_FORWARDER_ADDRESS:-0xB9F79d863261869B234c481D1f9A7af84AeAd192}"
 MIN_DEADLINE_BUFFER_SECONDS="${CRE_MIN_DEADLINE_BUFFER_SECONDS:-1200}"
+CRE_TARGET="${CRE_TARGET:-broadcast-settings}"
 ZERO_WORKFLOW_ID="0x0000000000000000000000000000000000000000000000000000000000000000"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
@@ -49,7 +50,7 @@ observation_count="$(jq -r '.observations | length' <<<"${observations}")"
 
 if [[ "${observation_count}" -eq 0 ]]; then
   echo "No settlement observations are ready; no onchain state was changed."
-  exit 3
+  exit 0
 fi
 
 wallet_address="$(cast wallet address --private-key "${OWNER_KEY}")"
@@ -138,7 +139,7 @@ cast send "${CORE}" 'setOracle(address)' "${SIMULATION_RECEIVER}" \
 echo "Broadcasting ${observation_count} CRE settlement observation(s)..."
 (
   cd "${ROOT_DIR}/oracle"
-  printf '\n' | cre workflow simulate . --target broadcast-settings --broadcast --evm-receipt-timeout 2m
+  cre workflow simulate . --target "${CRE_TARGET}" --trigger-index 0 --non-interactive --broadcast --evm-receipt-timeout 2m
 )
 
 echo "CRE broadcast completed with confirmed EVM write status. Envio may take a short time to index the result."

@@ -24,3 +24,12 @@ simulation-settings:
     workflow-path: ./src/workflow.ts
     config-path: ./config.simulation.json
     secrets-path: ""
+
+challenge-demo-settings:
+  user-workflow:
+    workflow-name: dibs-challenge-rehearsal
+    deployment-registry: private
+  workflow-artifacts:
+    workflow-path: ./src/workflow.ts
+    config-path: ./config.challenge-demo.json
+    secrets-path: ""

@@ -267,6 +267,7 @@ async function toCastMarket(
     replies: cast.replies?.count ?? 0,
     totalUnits,
     totalStaked,
+    communitySeed: mon(market.seedStake),
     convictionScore: totalStaked,
     rank,
     rankDelta: 0,
@@ -558,4 +559,23 @@ export async function getMarketsAwaitingResult(): Promise<SettlementMarket[] | n
     action: market.status === "CHALLENGED" ? "resolve" : "submit",
     previousQualityGrowthScore: Number(market.qualityGrowthScore),
   }));
+}
+
+export type EnvioIndexStatus={
+  marketCount:number;
+  latestMarketId:string|null;
+  latestOpenedAt:number|null;
+};
+
+/** Lightweight indexer probe used by the public health endpoint. */
+export async function getEnvioIndexStatus():Promise<EnvioIndexStatus|null>{
+  const data=await queryEnvio<{Market:Array<{id:string;openedAt:string}>}>(
+    `query DibsIndexerHealth { Market(order_by: {openedAt: desc}, limit: 1000) { id openedAt } }`,
+  );
+  if(!data)return null;
+  return {
+    marketCount:data.Market.length,
+    latestMarketId:data.Market[0]?.id??null,
+    latestOpenedAt:data.Market[0]?Number(data.Market[0].openedAt):null,
+  };
 }

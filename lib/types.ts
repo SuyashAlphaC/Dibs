@@ -30,6 +30,8 @@ export interface CastMarket {
   replies: number;
   totalUnits: number;
   totalStaked: number;
+  /** Protocol-funded liquidity, shown separately and excluded from discovery rank. */
+  communitySeed: number;
   convictionScore: number;
   rank: number;
   rankDelta: number;

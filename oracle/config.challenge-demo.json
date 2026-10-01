@@ -1,0 +1,10 @@
+{
+  "schedule": "0 */15 * * * *",
+  "observationApiUrl": "https://dibs-metropolis.vercel.app/api/oracle/challenge-demo",
+  "evm": {
+    "chainSelectorName": "monad-testnet",
+    "chainId": 10143,
+    "contractAddress": "0x3D0AC36a876fB3bB077F115DC48F1Ae692BA7F01",
+    "isTestnet": true
+  }
+}

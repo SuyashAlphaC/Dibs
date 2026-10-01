@@ -8,7 +8,8 @@ Hackathon judges: see the [submission guide](./SUBMISSION.md) for the live demo 
 
 - Responsive Next.js feed, market action, settlement console, and scout ledger.
 - Privy Farcaster/email/passkey authentication and embedded-wallet transaction path.
-- Neynar-backed early-cast API with an offline demo fallback.
+- Neynar-backed early-cast API with explicit live, unavailable, empty, and labelled preview states.
+- Persistent Privy wallet-to-Farcaster identity resolution for scout cards and ledgers.
 - Native-MON Solidity contract with bounded epochs, linear conviction curves, sponsor funding, permissioned market opening, oracle results, evidence hashes, bonded challenges, per-market payout caps, creator rewards, and pull-based claims.
 - Envio indexer for epochs, markets, positions, timeouts, allocations, settlements, and scout reputation; the feed polls indexed stake totals for live ranking.
 - Chainlink CRE workflow for observation consensus, deterministic quality scoring, evidence hashing, Monad settlement reports, and secondary challenge review.
@@ -63,7 +64,10 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The UI intentionally enters demo mode when credentials are absent. Add `NEXT_PUBLIC_PRIVY_APP_ID` and `NEYNAR_API_KEY` to enable those live integrations. Add the deployed `NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS` to make the Dibs action submit a Monad transaction.
+Production never substitutes fixtures for live data. Set `NEXT_PUBLIC_DEMO_MODE=true` only for
+an explicitly labelled, non-stakeable preview. Add `NEXT_PUBLIC_PRIVY_APP_ID`,
+`PRIVY_APP_SECRET`, and `NEYNAR_API_KEY` to resolve linked Farcaster identities. Add the
+deployed `NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS` to make the Dibs action submit a Monad transaction.
 
 ## Verify
 
@@ -94,11 +98,23 @@ schedule intentionally runs at minutes `3,13,23,33,43,53` to avoid GitHub's docu
 top-of-hour congestion window. Farcaster ownership for `dibs-metropolis.vercel.app` is signed by FID `2459338`; the
 association is stored in Vercel and served through the production manifest.
 
+The CRE settlement keeper is defined in `.github/workflows/cre-settlement.yml`. Configure the
+`MONAD_RPC_URL` and `CRE_RECEIVER_OWNER_PRIVATE_KEY` repository secrets plus the four public
+contract-address repository variables used by that workflow. Set the repository variable
+`CRE_SETTLEMENT_AUTOMATION_ENABLED=true` only after those values are present. A run with an empty observation
+queue is a successful no-op. The workflow installs the checksummed CRE CLI using Chainlink's
+official installer and broadcasts only after the script's owner, receiver, forwarder, core, and
+deadline preflight checks pass.
+
 `npm run proof:stake` is the reproducible live proof harness. It buys one unit on an active,
 compliant market with a dedicated testnet key and fails unless the resulting position appears in
-the production Envio-backed API. `CHALLENGE_DEMO_MARKET_ID` can nominate that market for one
-transparent optimistic-challenge rehearsal after its result is submitted; it is never enabled by
-default.
+the production Envio-backed API. For an adversarial rehearsal, set
+`CHALLENGE_DEMO_ENABLED=true` and `CHALLENGE_DEMO_MARKET_ID` only for a closed market without a
+result, then run
+`CRE_TARGET=challenge-demo-settings DIBS_OBSERVATION_URL=https://dibs-metropolis.vercel.app/api/oracle/challenge-demo npm run cre:broadcast`.
+The fixture is explicitly labelled as simulated; disable it immediately after the inflated report,
+challenge through the UI, and use the normal production broadcast to recompute from real Neynar
+data. The endpoint is disabled by default.
 
 The in-app Scout Assistant is a deterministic, transparent scan over live Envio markets. It can
 rank early, high-momentum, or closing signals, but it never signs or submits a wallet transaction.

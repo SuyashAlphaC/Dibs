@@ -19,7 +19,7 @@ const seeds: Seed[] = [
   { id:"quiet-products", hash:"0xc390bf1ee17a8b7aa123632851120a2093f71eb9", author:{fid:990,username:"patrick",displayName:"Patrick McKenzie",avatarUrl:avatar("patrick")}, text:"Some of the best software products are quiet: they remove a recurring anxiety, then disappear into the background of someone's life.", ageMinutes:123,likes:122,recasts:27,replies:16,totalUnits:190,convictionScore:2.84,rank:12,rankDelta:0,movementPercent:7,newScouts:5,category:"Product",status:"active",timeLeftMinutes:54,whyRising:"Early engagement quality is above baseline",potentialReward:1.62 },
 ];
 
-export const markets: CastMarket[] = seeds.map((market) => ({ ...market, timestamp: new Date(Date.UTC(2026, 8, 26, 10, 0) - market.ageMinutes * 60_000).toISOString(), totalStaked: market.totalUnits * 0.2, nextUnitCost: 0.2 }));
+export const markets: CastMarket[] = seeds.map((market) => ({ ...market, timestamp: new Date(Date.UTC(2026, 8, 26, 10, 0) - market.ageMinutes * 60_000).toISOString(), totalStaked: market.totalUnits * 0.2, communitySeed: 1, nextUnitCost: 0.2 }));
 
 export const activePositions: ScoutPosition[] = [
   { marketId:"signal-over-noise",author:"Linda Xie",excerpt:"The next breakout consumer crypto app…",entryRank:8,currentRank:1,amount:0.2,potentialReward:4.84,status:"active" },

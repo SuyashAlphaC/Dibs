@@ -28,8 +28,8 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
   const identity = useIdentity();
   const [mode,setMode] = useState(initialMode);
   const [category,setCategory] = useState("All");
-  const [marketList,setMarketList] = useState(seedMarkets);
-  const [dataSource,setDataSource] = useState<"demo"|"envio">("demo");
+  const [marketList,setMarketList] = useState<CastMarket[]>([]);
+  const [dataSource,setDataSource] = useState<"loading"|"demo"|"envio"|"unavailable">("loading");
   const [modal,setModal] = useState<ModalState>(null);
   const [toast,setToast] = useState<string|null>(null);
   const [recentId,setRecentId] = useState<string|null>(null);
@@ -56,14 +56,19 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
       if(identity.address?.match(/^0x[a-fA-F0-9]{40}$/))params.set("scout",identity.address);
       if(identity.farcaster?.fid)params.set("viewerFid",String(identity.farcaster.fid));
       const query=params.size?`?${params}`:"";
-      fetch(`/api/casts${query}`,{signal:controller.signal})
-        .then(response=>response.json())
-        .then((payload:{source:string;casts:CastMarket[]})=>{
-          const casts=payload.casts.map(market=>({...market,scoutPreview:market.scoutPreview?.map(scout=>identity.farcaster&&scout.address.toLowerCase()===identity.address?.toLowerCase()?{...scout,fid:identity.farcaster.fid,username:identity.farcaster.username,displayName:identity.farcaster.displayName||identity.farcaster.username||scout.displayName,avatarUrl:identity.farcaster.avatarUrl}:scout)}));
-          if(payload.source==="envio"&&casts.length){setMarketList(casts);setDataSource("envio");}
-          else {setMarketList(seedMarkets);setDataSource("demo");}
+      fetch(`/api/casts${query}`,{signal:controller.signal,cache:"no-store"})
+        .then(async response=>{
+          const payload=await response.json() as {source:string;casts?:CastMarket[]};
+          if(!response.ok)throw new Error(payload.source||`HTTP ${response.status}`);
+          return payload;
         })
-        .catch(()=>{});
+        .then(payload=>{
+          const casts=(payload.casts??[]).map(market=>({...market,scoutPreview:market.scoutPreview?.map(scout=>identity.farcaster&&scout.address.toLowerCase()===identity.address?.toLowerCase()?{...scout,fid:identity.farcaster.fid,username:identity.farcaster.username,displayName:identity.farcaster.displayName||identity.farcaster.username||scout.displayName,avatarUrl:identity.farcaster.avatarUrl}:scout)}));
+          if(payload.source==="envio"){setMarketList(casts);setDataSource("envio");}
+          else if(payload.source==="demo"){setMarketList(seedMarkets);setDataSource("demo");}
+          else {setMarketList([]);setDataSource("unavailable");}
+        })
+        .catch(error=>{if(error instanceof DOMException&&error.name==="AbortError")return;setMarketList([]);setDataSource("unavailable");});
     };
     refresh();
     const interval=window.setInterval(refresh,15000);
@@ -107,8 +112,8 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
 
   return <div className={`discover-page mobile-${mobileView}`}>
     <section className="discover-hero terminal-hero">
-      <div><p className="eyebrow">Live social discovery</p><h1>Farcaster Discovery for Early Casts</h1><h2>Find what&apos;s about to matter before it trends.</h2><p><i className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Live casts ranked by collective onchain conviction":"Curated protocol preview · Transactions are disabled"}</p></div>
-      <div className="rpc-chip"><Icon name="spark"/><span>Monad + Envio</span><strong>{dataSource==="envio"?"Synced":"Preview"}</strong></div>
+      <div><p className="eyebrow">Live social discovery</p><h1>Farcaster Discovery for Early Casts</h1><h2>Find what&apos;s about to matter before it trends.</h2><p><i className={dataSource==="envio"?"live-dot":""}/> {dataSource==="envio"?"Live casts ranked by scout conviction":dataSource==="demo"?"Preview markets · transactions disabled":dataSource==="loading"?"Connecting to the live Envio index…":"Live market service is temporarily unavailable"}</p></div>
+      <div className="rpc-chip"><Icon name="spark"/><span>Monad + Envio</span><strong>{dataSource==="envio"?"Synced":dataSource==="demo"?"Preview":dataSource==="loading"?"Connecting":"Unavailable"}</strong></div>
     </section>
     {(!identity.authenticated||Number(identity.balance??0)<0.01)&&<section className="onboarding-strip" aria-label="Get ready to call Dibs"><div><span>01</span><strong>{identity.authenticated?"Wallet connected":"Connect a wallet"}</strong><small>{identity.authenticated?"Identity ready on Monad Testnet":"Privy creates one if you need it"}</small></div><div><span>02</span><strong>Get testnet MON</strong><small>Only the conviction amount is at stake</small></div><div><span>03</span><strong>{identity.gasSponsored?"Gas sponsored":"Gas checked before signing"}</strong><small>{identity.gasSponsored?"Privy pays the network fee":"Your wallet shows any network fee"}</small></div><div className="onboarding-actions">{!identity.authenticated&&<button onClick={identity.login}>Connect wallet</button>}<a href="https://faucet.monad.xyz/" target="_blank" rel="noreferrer">Open official faucet ↗</a></div></section>}
     <MarketCandidateStrip onMarketOpened={marketOpened}/>
@@ -123,9 +128,9 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
       <div className="category-filter">{categories.map((item)=><button key={item} className={category===item?"active":""} onClick={()=>setCategory(item)}>{item}</button>)}</div>
     </section>
     <div className="mobile-discovery-switch" role="group" aria-label="Mobile discovery view"><button className={mobileView==="stack"?"active":""} onClick={()=>setMobileView("stack")}>Dibs Stack</button><button className={mobileView==="feed"?"active":""} onClick={()=>setMobileView("feed")}>Feed</button></div>
-    <div className="feed-label"><span>{visible.length} signal{visible.length===1?"":"s"}{query?` matching “${initialQuery.trim()}”`:""}</span><span>{dataSource==="envio"?"Sort · Conviction high to low":"Preview data · staking disabled"}</span></div>
+    <div className="feed-label"><span>{visible.length} signal{visible.length===1?"":"s"}{query?` matching “${initialQuery.trim()}”`:""}</span><span>{dataSource==="envio"?"Live · Envio indexed":dataSource==="demo"?"Preview · not stakeable":dataSource==="loading"?"Loading live index":"Service unavailable"}</span></div>
     {mobileView==="stack"&&<MobileDibsStack markets={visible} onDibs={startDibs}/>}<section className={`market-feed ${mobileView==="stack"?"mobile-feed-hidden":""}`} aria-labelledby="live-markets-title"><h2 className="sr-only" id="live-markets-title">Live Farcaster discovery markets</h2>{visible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
-    {!visible.length&&<section className="empty-state search-empty"><strong>No matching signals</strong><p>Try a Farcaster username, topic, or phrase from a cast.</p></section>}
+    {!visible.length&&<section className="empty-state search-empty"><strong>{dataSource==="loading"?"Connecting to the live index…":dataSource==="unavailable"?"Live markets are temporarily unavailable":marketList.length?"No matching signals":"No live markets right now"}</strong><p>{dataSource==="loading"?"This should take only a moment.":dataSource==="unavailable"?"Dibs will retry automatically. No preview data is being presented as live.":marketList.length?"Try a Farcaster username, topic, or phrase from a cast.":"The market radar scans for eligible early casts every few minutes."}</p></section>}
     <section className="discovery-explainer" aria-labelledby="how-dibs-works">
       <p className="eyebrow">Transparent discovery</p><h2 id="how-dibs-works">How does Dibs find early Farcaster signals?</h2>
       <p>Dibs turns early social discovery into an accountable onchain signal. Scouts back promising casts with MON, collective conviction determines discovery rank, and quality-weighted engagement settles each market.</p>
