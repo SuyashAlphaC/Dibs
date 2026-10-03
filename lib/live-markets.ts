@@ -64,6 +64,7 @@ export type ScoutLeaderboardEntry={
   averageLeadMinutes:number;
   specialty:string;
   streakDays:number;
+  claimed:number;
 };
 
 export type ScoutDashboard = {
@@ -533,6 +534,7 @@ export async function getScoutLeaderboard():Promise<ScoutLeaderboardEntry[]|null
       averageLeadMinutes:leads.length?leads.reduce((sum,value)=>sum+value,0)/leads.length:0,
       specialty:`${specialty} scout`,
       streakDays:consecutiveDayStreak(positions.map(position=>Number(position.firstScoutedAt))),
+      claimed:mon(scout?.claimed??"0"),
     };
   }).sort((a,b)=>b.weeklyCalls-a.weeklyCalls||b.successfulCalls-a.successfulCalls||a.averageLeadMinutes-b.averageLeadMinutes).slice(0,20);
 }

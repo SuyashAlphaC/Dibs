@@ -1,5 +1,7 @@
 import {NextResponse} from "next/server";
 import {getEligibleMarketCandidates,openEligibleMarkets} from "@/lib/market-opener";
+import {authenticateScout} from "@/lib/privy-auth";
+import {marketAutomationPolicy} from "@/lib/operator-safety";
 
 const attempts=new Map<string,number>();
 const RATE_LIMIT_MS=30_000;
@@ -40,7 +42,11 @@ export async function GET(){
 
 export async function POST(request:Request){
   if(!sameOrigin(request))return NextResponse.json({error:"Cross-site nominations are not allowed"},{status:403});
-  const client=request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()??"local";
+  let scout;
+  try{scout=await authenticateScout(request);}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Authentication failed"},{status:401});}
+  const policy=marketAutomationPolicy();
+  if(!policy.publicNominationsEnabled)return NextResponse.json({error:"Public nominations are temporarily paused"},{status:503});
+  const client=scout.userId;
   const lastAttempt=attempts.get(client)??0;
   if(Date.now()-lastAttempt<RATE_LIMIT_MS)return NextResponse.json({error:"Wait 30 seconds before nominating another cast"},{status:429});
   let body:unknown;
@@ -49,8 +55,11 @@ export async function POST(request:Request){
   if(!requested)return NextResponse.json({error:"Enter a full Farcaster cast URL or cast hash"},{status:400});
   attempts.set(client,Date.now());
   try{
-    const result=await openEligibleMarkets(requested,1,Number(process.env.PUBLIC_NOMINATION_MARKET_CAP??12));
-    if(result.opened.length)return NextResponse.json(result,{status:201});
+    const result=await openEligibleMarkets(requested,1,policy.publicEpochMarketCap,false);
+    if(result.opened.length){
+      console.info(JSON.stringify({event:"public_market_nomination",userId:scout.userId,fid:scout.fid,username:scout.username,identifier:requested,marketHash:result.opened[0].hash,transaction:result.opened[0].transaction}));
+      return NextResponse.json(result,{status:201});
+    }
     const reason=result.skipped[0]?.reason;
     return NextResponse.json({error:reason??"This cast is not currently eligible for an early market",...result},{status:409});
   }catch(error){

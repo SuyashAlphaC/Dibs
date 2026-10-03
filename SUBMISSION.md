@@ -9,6 +9,7 @@
 - CRE receiver: `0x78B87B938cbdd9453F2dA6adA043d74d792C9A81`
 - Public CRE simulation fixture: https://dibs-metropolis.vercel.app/api/oracle/simulation-fixture
 - Judge-facing simulation console: https://dibs-metropolis.vercel.app/simulation
+- Live acceptance ledger: https://dibs-metropolis.vercel.app/evidence
 - Public integration health: https://dibs-metropolis.vercel.app/api/health
 
 ## What judges should test
@@ -48,11 +49,17 @@ flowchart LR
 | Envio | Live ranking, positions, activity, settlement and reputation data | Production `/api/casts`, scout ledger and GraphQL-backed profiles |
 | Privy | Wallet authentication, embedded wallet support and Farcaster account linking | Production connect and profile-link flows |
 | Farcaster | Source of eligible casts and Mini App distribution | Valid signed account association and live Mini App manifest |
-| Chainlink CRE | Deterministic quality scoring, challenge re-observation and report preparation | Reproducible, explicitly labeled dry-run evidence in `oracle/SIMULATION_EVIDENCE.md` |
+| Chainlink CRE | Deterministic quality scoring, challenge re-observation and Monad report execution | Labelled fixture proof in `oracle/SIMULATION_EVIDENCE.md` plus confirmed simulation-broadcast evidence in `evidence/live-market-12` |
 
 ## Integrity boundary
 
-The CRE evidence is a dry-run simulation. It proves observation fetching, deterministic quality filtering, score calculation, normal settlement calldata, challenged-market correction calldata and report preparation. It does **not** claim a production CRE report was broadcast. Contract-side forwarding, allocation, challenge and claim behavior are independently covered by Foundry tests.
+Dibs has two explicitly separated CRE evidence paths. The fixture path is a dry-run simulation
+used to reproduce quality filtering and challenge correction. The production-data path consumed
+real Neynar observations for markets 12–14 and used `cre workflow simulate --broadcast` through
+an isolated simulation receiver to produce confirmed Monad testnet writes. This is not represented
+as a Chainlink DON deployment; DON access remains pending. Contract-side forwarding, allocation,
+challenge and claim behavior are independently covered by Foundry tests, while `/evidence` keeps
+missing field proofs visibly pending until genuine users create them.
 
 New markets store a versioned quality-weighted opening baseline. Legacy markets remain readable and use the documented raw-interaction compatibility path.
 

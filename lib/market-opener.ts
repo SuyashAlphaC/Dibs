@@ -1,4 +1,4 @@
-import {createWalletClient,http,isAddress,padHex,parseEther,type Address,type Hex} from "viem";
+import {createWalletClient,http,isAddress,padHex,type Address,type Hex} from "viem";
 import {privateKeyToAccount} from "viem/accounts";
 import {monad,monadClient} from "@/lib/contract";
 import {collectQualifiedInteractions} from "@/lib/neynar-observations";
@@ -10,6 +10,7 @@ import {
   qualifiesForDiscovery,
   type DiscoveryPolicy,
 } from "@/lib/discovery-quality";
+import {assertOperatorCanSpend,marketAutomationPolicy} from "@/lib/operator-safety";
 
 const openerAbi=[
   {type:"function",name:"epochCount",stateMutability:"view",inputs:[],outputs:[{name:"",type:"uint256"}]},
@@ -132,8 +133,11 @@ async function active24HourEpoch(contract:Address,now:bigint){
   return null;
 }
 
-export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets=Number(process.env.MAX_MARKETS_PER_RUN??5),epochMarketCap?:number){
-  const key=(process.env.MARKET_OPENER_PRIVATE_KEY??process.env.DEPLOYER_PRIVATE_KEY) as Hex|undefined;
+export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets?:number,epochMarketCap?:number,allowEpochCreation=true){
+  const policy=marketAutomationPolicy();
+  const requestedLimit=maxMarkets??policy.maxMarketsPerRun;
+  const safeLimit=Math.min(requestedLimit,policy.maxMarketsPerRun);
+  const key=process.env.MARKET_OPENER_PRIVATE_KEY as Hex|undefined;
   const apiKey=process.env.NEYNAR_API_KEY;
   const contract=process.env.NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS as Address|undefined;
   const rpc=process.env.NEXT_PUBLIC_MONAD_RPC_URL;
@@ -141,7 +145,7 @@ export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets
   const account=privateKeyToAccount(key);
   const wallet=createWalletClient({account,chain:monad,transport:http(rpc)});
   const now=BigInt(Math.floor(Date.now()/1000));
-  const discovery=await discoverEligibleCasts(apiKey,requestedIdentifier,Math.max(1,maxMarkets));
+  const discovery=await discoverEligibleCasts(apiKey,requestedIdentifier,Math.max(1,safeLimit));
   const candidates=discovery.casts;
   if(!candidates.length)return {epochId:null,discovered:discovery.discovered,eligible:0,opened:[],skipped:[]};
   let epochId=await active24HourEpoch(contract,now);
@@ -165,9 +169,12 @@ export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets
   if(!prepared.length)return {epochId:epochId?.toString()??null,discovered:discovery.discovered,eligible:candidates.length,opened:[],skipped};
   let epochTransaction:Hex|undefined;
   if(!epochId){
+    if(!allowEpochCreation)return {epochId:null,discovered:discovery.discovered,eligible:candidates.length,opened:[],skipped:prepared.map(({cast})=>({hash:cast.hash,reason:"No active epoch. The funded keeper opens epochs; public nominations cannot spend sponsor funds."}))};
+    const balance=await monadClient.getBalance({address:account.address});
+    assertOperatorCanSpend(balance,policy);
     const count=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"epochCount"});
     epochId=count+1n;
-    epochTransaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"createEpoch",args:[Number(now),Number(now+86_400n)],value:parseEther(process.env.MARKET_EPOCH_SEED_MON??"1")});
+    epochTransaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"createEpoch",args:[Number(now),Number(now+86_400n)],value:policy.epochSeed});
     await monadClient.waitForTransactionReceipt({hash:epochTransaction});
   }
   const opened:Array<{hash:string;transaction:Hex;candidate:MarketCandidate}>=[];
@@ -180,7 +187,7 @@ export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets
 }
 
 export async function maintainMarkets(){
-  const key=(process.env.MARKET_OPENER_PRIVATE_KEY??process.env.DEPLOYER_PRIVATE_KEY) as Hex|undefined;
+  const key=process.env.MARKET_OPENER_PRIVATE_KEY as Hex|undefined;
   const contract=process.env.NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS as Address|undefined;
   const rpc=process.env.NEXT_PUBLIC_MONAD_RPC_URL;
   if(!key||!contract||!rpc)throw new Error("Market keeper environment is incomplete");

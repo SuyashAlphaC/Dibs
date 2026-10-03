@@ -26,13 +26,14 @@ type Identity = {
   login: () => void;
   linkFarcaster: () => void;
   logout: () => void;
+  getAccessToken: () => Promise<string|null>;
   sendStake: (transaction: Transaction | null) => Promise<string>;
 };
 
 const IdentityContext = createContext<Identity | null>(null);
 
 function PrivyIdentity({children}: {children: React.ReactNode}) {
-  const {ready:privyReady, authenticated, login, logout, user} = usePrivy();
+  const {ready:privyReady, authenticated, login, logout, user,getAccessToken} = usePrivy();
   const {ready:walletsReady, wallets} = useWallets();
   const {linkFarcaster}=useLinkAccount();
   const {sendTransaction} = useSendTransaction();
@@ -76,6 +77,7 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
       login: () => login(),
       linkFarcaster,
       logout,
+      getAccessToken,
       sendStake: async (transaction) => {
         if (!transaction) throw new Error("Contract address is not configured.");
         if (!wallet) throw new Error("Connect a wallet before calling Dibs.");
@@ -90,7 +92,7 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
         return result.hash;
       },
     }),
-    [authenticated, balance, farcaster, gasSponsored, linkFarcaster, login, logout, privyReady, refreshBalance, sendTransaction, wallet, walletsReady],
+    [authenticated, balance, farcaster, gasSponsored, getAccessToken, linkFarcaster, login, logout, privyReady, refreshBalance, sendTransaction, wallet, walletsReady],
   );
   return <IdentityContext.Provider value={value}>{children}</IdentityContext.Provider>;
 }
@@ -110,6 +112,7 @@ function DemoIdentity({children}: {children: React.ReactNode}) {
       login: () => setAuthenticated(true),
       linkFarcaster: () => undefined,
       logout: () => setAuthenticated(false),
+      getAccessToken: async()=>null,
       sendStake: async () => {
         await new Promise((resolve) => setTimeout(resolve, 700));
         return `demo-${Date.now()}`;

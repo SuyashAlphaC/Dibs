@@ -1,7 +1,9 @@
 import {NextResponse} from "next/server";
-import {getAddress,zeroAddress,zeroHash} from "viem";
+import {formatEther,getAddress,zeroAddress,zeroHash,type Hex} from "viem";
+import {privateKeyToAccount} from "viem/accounts";
 import {monadClient} from "@/lib/contract";
 import {getEnvioIndexStatus,getMarketsAwaitingResult} from "@/lib/live-markets";
+import {assertOperatorCanSpend,marketAutomationPolicy} from "@/lib/operator-safety";
 
 export const dynamic="force-dynamic";
 
@@ -39,16 +41,26 @@ async function contractHealth(){
   return {core,receiver:oracle,mode,workflowPinned:workflowId!==zeroHash};
 }
 
+async function automationHealth(){
+  const policy=marketAutomationPolicy();
+  const key=process.env.MARKET_OPENER_PRIVATE_KEY as Hex|undefined;
+  if(!key)return {...policy,epochSeed:formatEther(policy.epochSeed),maxEpochSeed:formatEther(policy.maxEpochSeed),minOperatorBalance:formatEther(policy.minOperatorBalance),operatorBalance:null,status:"unconfigured" as const};
+  const account=privateKeyToAccount(key);
+  const balance=await monadClient.getBalance({address:account.address});
+  if(policy.automationEnabled&&policy.openingEnabled)assertOperatorCanSpend(balance,policy);
+  return {...policy,epochSeed:formatEther(policy.epochSeed),maxEpochSeed:formatEther(policy.maxEpochSeed),minOperatorBalance:formatEther(policy.minOperatorBalance),operatorBalance:formatEther(balance),status:"ready" as const};
+}
+
 function failure(reason:unknown){return {status:"unavailable" as const,reason:reason instanceof Error?reason.message:"unknown"};}
 
 export async function GET(){
   const checkedAt=new Date().toISOString();
-  const [indexer,queue,rpc,neynar,receiver]=await Promise.allSettled([
-    getEnvioIndexStatus(),getMarketsAwaitingResult(),monadClient.getBlockNumber(),neynarHealth(),contractHealth(),
+  const [indexer,queue,rpc,neynar,receiver,automation]=await Promise.allSettled([
+    getEnvioIndexStatus(),getMarketsAwaitingResult(),monadClient.getBlockNumber(),neynarHealth(),contractHealth(),automationHealth(),
   ]);
   const indexValue=indexer.status==="fulfilled"?indexer.value:null;
   const queueValue=queue.status==="fulfilled"?queue.value:null;
-  const ok=Boolean(indexValue&&queueValue&&rpc.status==="fulfilled"&&neynar.status==="fulfilled"&&receiver.status==="fulfilled");
+  const ok=Boolean(indexValue&&queueValue&&rpc.status==="fulfilled"&&neynar.status==="fulfilled"&&receiver.status==="fulfilled"&&automation.status==="fulfilled");
   const actions=(queueValue??[]).reduce((counts,market)=>{counts[market.action]++;return counts;},{submit:0,resolve:0});
   const services={
     envio:indexValue?{status:"ready" as const,...indexValue}:failure(indexer.status==="rejected"?indexer.reason:"query failed"),
@@ -56,6 +68,7 @@ export async function GET(){
     monad:rpc.status==="fulfilled"?{status:"ready" as const,blockNumber:rpc.value.toString()}:failure(rpc.reason),
     neynar:neynar.status==="fulfilled"?{status:"ready" as const}:failure(neynar.reason),
     creReceiver:receiver.status==="fulfilled"?{status:"ready" as const,...receiver.value}:failure(receiver.reason),
+    marketAutomation:automation.status==="fulfilled"?automation.value:failure(automation.reason),
   };
   return NextResponse.json({ok,checkedAt,services},{status:ok?200:503,headers:{"cache-control":"no-store"}});
 }

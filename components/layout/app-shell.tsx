@@ -45,7 +45,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
       <div className="brand-cluster">
         <Link href="/discover" className="brand" aria-label="Dibs home"><img className="brand-logo" src="/dibs_logo.png" alt="Dibs Farcaster discovery" width="92" height="54" decoding="async" fetchPriority="high"/></Link>
         <p className="brand-mantra">Early signal.<br/>Real conviction.<br/>Verified taste.</p>
-        <p className="brand-network">[Monad mainnet] <i/> <span>{markets.reduce((total,market)=>total+market.newScouts,0)} scouts online</span></p>
+        <p className="brand-network">[Monad testnet] <i/> <span>{markets.reduce((total,market)=>total+market.newScouts,0)} scouts indexed</span></p>
       </div>
       <nav className="topnav" aria-label="Primary navigation">
         {nav.map((item)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}>{item.label}</Link>)}
@@ -69,10 +69,11 @@ export function AppShell({children}: {children: React.ReactNode}) {
           <div className="mini-progress"><i style={{width:`${Math.min(100,score/10)}%`}}/></div>
           <p>{identity.authenticated?`${dashboard?.calls??0} onchain calls`:"Connect to build reputation"}</p>
         </div>
+        <Link className="evidence-link" href="/evidence"><Icon name="spark"/><span><strong>Judge evidence</strong><small>Live system proof</small></span><i>→</i></Link>
         <ScoutAssistant markets={markets}/>
         <Link className="side-profile" href="/profile">{identity.farcaster?<Avatar name={accountName} src={identity.farcaster.avatarUrl} size={38}/>:<span className="wallet-avatar-fallback"><Icon name="profile"/></span>}<span><strong>{accountName}</strong><small>{identity.authenticated?identity.chainReady?"Monad Testnet":"Switching network":"Wallet not connected"}</small></span>{identity.authenticated&&<span className="online-dot"/>}</Link>
       </aside>
-      <main className="main-content" id="main-content" tabIndex={-1}>{children}<footer className="site-footer"><span>© 2026 Dibs · Social discovery on Monad</span><nav aria-label="Product and trust links"><Link href="/privacy">Privacy</Link><a href="https://github.com/SuyashAlphaC/Dibs" target="_blank" rel="noreferrer">Source</a><a href="https://github.com/SuyashAlphaC/Dibs/issues" target="_blank" rel="noreferrer">Contact</a><a href="/.well-known/security.txt">Security</a></nav></footer></main>
+      <main className="main-content" id="main-content" tabIndex={-1}>{children}<footer className="site-footer"><span>© 2026 Dibs · Social discovery on Monad testnet</span><nav aria-label="Product and trust links"><Link href="/evidence">Evidence</Link><Link href="/privacy">Privacy</Link><a href="https://github.com/SuyashAlphaC/Dibs" target="_blank" rel="noreferrer">Source</a><a href="https://github.com/SuyashAlphaC/Dibs/issues" target="_blank" rel="noreferrer">Contact</a><a href="/.well-known/security.txt">Security</a></nav></footer></main>
       <aside className="right-rail">
         <div className="rail-heading"><div>Conviction <em>tape</em></div><Link href="/activity">Full ledger</Link></div>
         <p className="rail-kicker">Latest scouts putting MON behind an early call.</p>

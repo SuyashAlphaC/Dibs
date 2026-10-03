@@ -1,6 +1,6 @@
 # Dibs
 
-Hackathon judges: see the [submission guide](./SUBMISSION.md) for the live demo path, architecture, sponsor evidence, and the explicit CRE simulation boundary.
+Hackathon judges: see the [submission guide](./SUBMISSION.md) and the live [/evidence](https://dibs-metropolis.vercel.app/evidence) ledger for the demo path, architecture, sponsor evidence, and explicit execution boundaries.
 
 **Call culture before it matters.** Dibs is a conviction-ranked Farcaster feed on Monad. Scouts buy increasingly expensive conviction units on casts they believe will grow; quality-weighted engagement resolves each epoch, and successful early scouts share the reward allocation.
 
@@ -14,7 +14,8 @@ Hackathon judges: see the [submission guide](./SUBMISSION.md) for the live demo 
 - Envio indexer for epochs, markets, positions, timeouts, allocations, settlements, and scout reputation; the feed polls indexed stake totals for live ranking.
 - Chainlink CRE workflow for observation consensus, deterministic quality scoring, evidence hashing, Monad settlement reports, and secondary challenge review.
 - ERC-165 CRE settlement receiver with Keystone Forwarder authentication, optional workflow-ID pinning, chain-bound reports, and a strict settlement-function allowlist.
-- Authenticated market keeper that discovers eligible Neynar casts, creates exact 24-hour epochs, opens seeded markets, expires missed reports/challenges, and finalizes ready epochs.
+- Authenticated market keeper with fail-closed kill switches, bounded epoch funding, a retained-balance guard, exact 24-hour epochs, lifecycle expiry, and finalization.
+- Privy-authenticated Farcaster nominations that can open eligible casts only inside an existing keeper-funded epoch and can never create or fund epochs.
 - Quality-gated discovery that requires an established Farcaster account, a Neynar score of at least `0.6`, and substantive root-cast text before a market can open.
 - Farcaster Mini App SDK bootstrap, hosted manifest, launch metadata, and compliant icon/splash/social assets.
 
@@ -85,7 +86,7 @@ cd ../oracle && npm test && npm run typecheck
 
 1. Set `CRE_FORWARDER_ADDRESS` to the official forwarder for the target Monad network. Confirm the address for your CRE tenant with `cre workflow supported-chains --output json`.
 2. Run `contracts/script/Deploy.s.sol`. It deploys Dibs, deploys `DibsSettlementReceiver`, and makes the receiver Dibs' oracle atomically in one broadcast.
-3. Configure `MARKET_OPENER_PRIVATE_KEY` and `CRON_SECRET`; the protected keeper creates exact 24-hour epochs and opens only casts younger than 30 minutes with fewer than 25 interactions.
+3. Configure `MARKET_OPENER_PRIVATE_KEY` and `CRON_SECRET`; set explicit `MARKET_EPOCH_SEED_MON`, `MARKET_MAX_EPOCH_SEED_MON`, and `MARKET_MIN_OPERATOR_BALANCE_MON` limits. Enable `MARKET_AUTOMATION_ENABLED` and `MARKET_OPENING_ENABLED` only after validating those limits. The keeper opens only casts younger than 30 minutes with fewer than 25 interactions.
 4. Put the Dibs deployment address and block in `indexer/config.yaml`, deploy the indexer, and expose its GraphQL URL to the frontend.
 5. Configure Privy, Neynar, and transaction sponsorship.
 6. Put the **receiver address** in `oracle/config.testnet.json`. For the hackathon submission, run the reproducible `simulation-settings` target documented in `oracle/SIMULATION_EVIDENCE.md`. Production registration still awaits Chainlink organization deploy-access approval; only after deployment should the receiver be pinned to the returned workflow ID.
@@ -98,7 +99,15 @@ schedule intentionally runs at minutes `3,13,23,33,43,53` to avoid GitHub's docu
 top-of-hour congestion window. Farcaster ownership for `dibs-metropolis.vercel.app` is signed by FID `2459338`; the
 association is stored in Vercel and served through the production manifest.
 
-The CRE settlement keeper is defined in `.github/workflows/cre-settlement.yml`. Configure the
+Automation is fail-closed: unset switches perform no writes, the seed defaults to zero in code,
+the configured seed may not exceed the explicit cap, and the operator must retain the configured
+minimum balance after funding. `MARKET_OPENING_ENABLED=false` pauses new spending while allowing
+the keeper to advance existing lifecycle state. Public nominations require a verified Privy
+session plus a linked Farcaster account, are rate-limited per Privy user, emit a structured audit
+record, respect the epoch market cap, and never create a funded epoch.
+
+The CRE settlement keeper is defined in `.github/workflows/cre-settlement.yml`. It installs Bun
+(required by current CRE TypeScript workflows), Foundry, and Chainlink's checksummed CRE CLI. Configure the
 `MONAD_RPC_URL`, `CRE_RECEIVER_OWNER_PRIVATE_KEY`, and `CRE_API_KEY` repository secrets plus the four public
 contract-address repository variables used by that workflow. Set the repository variable
 `CRE_SETTLEMENT_AUTOMATION_ENABLED=true` only after those values are present. A run with an empty observation
