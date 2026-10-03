@@ -11,10 +11,10 @@ import type {CastMarket,LiveScoutSignal} from "@/lib/types";
 import {ScoutAssistant} from "@/components/scout-assistant";
 
 const nav = [
-  {href:"/discover",label:"Conviction Feed",icon:"discover" as const},
-  {href:"/dibs",label:"My Positions",icon:"dibs" as const},
-  {href:"/activity",label:"Market Tape",icon:"activity" as const},
-  {href:"/profile",label:"Scout Network",icon:"profile" as const},
+  {href:"/discover",label:"Home",icon:"discover" as const},
+  {href:"/dibs",label:"My Dibs",icon:"dibs" as const},
+  {href:"/activity",label:"Activity",icon:"activity" as const},
+  {href:"/profile",label:"Scouts",icon:"profile" as const},
 ];
 
 export function AppShell({children}: {children: React.ReactNode}) {
@@ -44,7 +44,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
     <header className="topbar">
       <div className="brand-cluster">
         <Link href="/discover" className="brand" aria-label="Dibs home"><img className="brand-logo" src="/dibs_logo.png" alt="Dibs Farcaster discovery" width="92" height="54" decoding="async" fetchPriority="high"/></Link>
-        <p className="brand-mantra">Early signal.<br/>Real conviction.<br/>Verified taste.</p>
+        <p className="brand-mantra">DIBS: Cultural Foresight Protocol</p>
         <p className="brand-network">[Monad testnet] <i/> <span>{markets.reduce((total,market)=>total+market.newScouts,0)} scouts indexed</span></p>
       </div>
       <nav className="topnav" aria-label="Primary navigation">
@@ -61,7 +61,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
     <div className="app-grid">
       <aside className="left-rail">
         <nav className="side-nav" aria-label="App sections">
-          <p className="eyebrow">Conviction desk</p>
+          <p className="eyebrow">Navigation</p>
           {nav.map((item,index)=><Link key={item.href} href={item.href} className={pathname.startsWith(item.href)?"active":""}><b>{String(index+1).padStart(2,"0")}</b><Icon name={item.icon}/><span>{item.label}</span><i>→</i></Link>)}
         </nav>
         <div className="reputation-mini">

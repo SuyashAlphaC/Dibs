@@ -8,6 +8,7 @@ import "./premium.css";
 import "./social.css";
 import "./minimalist.css";
 import "./moat.css";
+import "./cultural.css";
 import {IdentityProvider} from "@/components/identity-provider";
 import {AppShell} from "@/components/layout/app-shell";
 import {MiniAppReady} from "@/components/mini-app-ready";
