@@ -18,6 +18,7 @@ export type MarketAutomationPolicy={
   maxEpochSeed:bigint;
   minOperatorBalance:bigint;
   maxMarketsPerRun:number;
+  maxMaintenanceTransactionsPerRun:number;
   publicEpochMarketCap:number;
 };
 
@@ -26,16 +27,22 @@ export function marketAutomationPolicy(env:Record<string,string|undefined>=proce
   const maxEpochSeed=parseNonNegativeMon("MARKET_MAX_EPOCH_SEED_MON",env.MARKET_MAX_EPOCH_SEED_MON??DEFAULT_MAX_SEED_MON);
   const minOperatorBalance=parseNonNegativeMon("MARKET_MIN_OPERATOR_BALANCE_MON",env.MARKET_MIN_OPERATOR_BALANCE_MON??DEFAULT_MIN_BALANCE_MON);
   const maxMarketsPerRun=Math.floor(Number(env.MAX_MARKETS_PER_RUN??4));
+  const maxMaintenanceTransactionsPerRun=Math.floor(Number(env.MAX_MAINTENANCE_TRANSACTIONS_PER_RUN??8));
   const publicEpochMarketCap=Math.floor(Number(env.PUBLIC_NOMINATION_MARKET_CAP??12));
   if(epochSeed>maxEpochSeed)throw new Error(`MARKET_EPOCH_SEED_MON exceeds the ${formatEther(maxEpochSeed)} MON safety cap`);
   if(!Number.isSafeInteger(maxMarketsPerRun)||maxMarketsPerRun<1||maxMarketsPerRun>10)throw new Error("MAX_MARKETS_PER_RUN must be between 1 and 10");
+  if(!Number.isSafeInteger(maxMaintenanceTransactionsPerRun)||maxMaintenanceTransactionsPerRun<1||maxMaintenanceTransactionsPerRun>20)throw new Error("MAX_MAINTENANCE_TRANSACTIONS_PER_RUN must be between 1 and 20");
   if(!Number.isSafeInteger(publicEpochMarketCap)||publicEpochMarketCap<1||publicEpochMarketCap>50)throw new Error("PUBLIC_NOMINATION_MARKET_CAP must be between 1 and 50");
   return {
     automationEnabled:enabled(env.MARKET_AUTOMATION_ENABLED),
     openingEnabled:enabled(env.MARKET_OPENING_ENABLED),
     publicNominationsEnabled:enabled(env.PUBLIC_NOMINATIONS_ENABLED),
-    epochSeed,maxEpochSeed,minOperatorBalance,maxMarketsPerRun,publicEpochMarketCap,
+    epochSeed,maxEpochSeed,minOperatorBalance,maxMarketsPerRun,maxMaintenanceTransactionsPerRun,publicEpochMarketCap,
   };
+}
+
+export function assertOperatorBalanceFloor(balance:bigint,policy:Pick<MarketAutomationPolicy,"minOperatorBalance">){
+  if(balance<=policy.minOperatorBalance)throw new Error(`Operator balance guard: ${formatEther(balance)} MON is at or below the ${formatEther(policy.minOperatorBalance)} MON retained balance floor`);
 }
 
 export function assertOperatorCanSpend(balance:bigint,policy:Pick<MarketAutomationPolicy,"epochSeed"|"minOperatorBalance">){

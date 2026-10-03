@@ -10,7 +10,7 @@ import {
   qualifiesForDiscovery,
   type DiscoveryPolicy,
 } from "@/lib/discovery-quality";
-import {assertOperatorCanSpend,marketAutomationPolicy} from "@/lib/operator-safety";
+import {assertOperatorBalanceFloor,assertOperatorCanSpend,marketAutomationPolicy} from "@/lib/operator-safety";
 
 const openerAbi=[
   {type:"function",name:"epochCount",stateMutability:"view",inputs:[],outputs:[{name:"",type:"uint256"}]},
@@ -167,6 +167,7 @@ export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets
     }catch{skipped.push({hash:cast.hash,reason:"qualified baseline unavailable"});}
   }
   if(!prepared.length)return {epochId:epochId?.toString()??null,discovered:discovery.discovered,eligible:candidates.length,opened:[],skipped};
+  assertOperatorBalanceFloor(await monadClient.getBalance({address:account.address}),policy);
   let epochTransaction:Hex|undefined;
   if(!epochId){
     if(!allowEpochCreation)return {epochId:null,discovered:discovery.discovered,eligible:candidates.length,opened:[],skipped:prepared.map(({cast})=>({hash:cast.hash,reason:"No active epoch. The funded keeper opens epochs; public nominations cannot spend sponsor funds."}))};
@@ -179,6 +180,7 @@ export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets
   }
   const opened:Array<{hash:string;transaction:Hex;candidate:MarketCandidate}>=[];
   for(const {cast,castHash,castCreator,baseline} of prepared){
+    assertOperatorBalanceFloor(await monadClient.getBalance({address:account.address}),policy);
     const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"openMarket",args:[epochId,castHash,castCreator,baseline]});
     await monadClient.waitForTransactionReceipt({hash:transaction});
     opened.push({hash:cast.hash,transaction,candidate:publicCandidate(cast,discovery.now)});
@@ -187,6 +189,7 @@ export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets
 }
 
 export async function maintainMarkets(){
+  const policy=marketAutomationPolicy();
   const key=process.env.MARKET_OPENER_PRIVATE_KEY as Hex|undefined;
   const contract=process.env.NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS as Address|undefined;
   const rpc=process.env.NEXT_PUBLIC_MONAD_RPC_URL;
@@ -202,6 +205,14 @@ export async function maintainMarkets(){
     monadClient.readContract({address:contract,abi:openerAbi,functionName:"challengeResolutionPeriod"}),
   ]);
   const transactions:Array<{action:string,id:string,transaction:Hex}>=[];
+  const write=async(action:string,id:string,execute:()=>Promise<Hex>)=>{
+    if(transactions.length>=policy.maxMaintenanceTransactionsPerRun)return false;
+    assertOperatorBalanceFloor(await monadClient.getBalance({address:account.address}),policy);
+    const transaction=await execute();
+    await monadClient.waitForTransactionReceipt({hash:transaction});
+    transactions.push({action,id,transaction});
+    return true;
+  };
   const epochIds=new Set<number>();
   for(let id=1n;id<=marketCount;id++){
     const market=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"markets",args:[id]});
@@ -213,17 +224,15 @@ export async function maintainMarkets(){
     if(!resultSubmitted&&now>=closesAt+resultGrace)action="expireMissingResult";
     else if(challenged&&!challengeResolved&&now>=resultSubmittedAt+challengePeriod+resolutionPeriod)action="expireChallenge";
     if(action){
-      const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:action,args:[id]});
-      await monadClient.waitForTransactionReceipt({hash:transaction});transactions.push({action,id:id.toString(),transaction});
+      const executed=await write(action,id.toString(),()=>wallet.writeContract({address:contract,abi:openerAbi,functionName:action,args:[id]}));
+      if(!executed)break;
       if(action==="expireMissingResult"&&challengeDemoMarket===id.toString()){
         const [units,bond]=await Promise.all([
           monadClient.readContract({address:contract,abi:openerAbi,functionName:"unitsOf",args:[id,account.address]}),
           monadClient.readContract({address:contract,abi:openerAbi,functionName:"challengeBond"}),
         ]);
         if(units>0n){
-          const challengeTransaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"challenge",args:[id],value:bond});
-          await monadClient.waitForTransactionReceipt({hash:challengeTransaction});
-          transactions.push({action:"challengeDemo",id:id.toString(),transaction:challengeTransaction});
+          await write("challengeDemo",id.toString(),()=>wallet.writeContract({address:contract,abi:openerAbi,functionName:"challenge",args:[id],value:bond}));
         }
       }
     }else if(challengeDemoMarket===id.toString()&&resultSubmitted&&!challenged&&now<resultSubmittedAt+challengePeriod){
@@ -232,9 +241,7 @@ export async function maintainMarkets(){
         monadClient.readContract({address:contract,abi:openerAbi,functionName:"challengeBond"}),
       ]);
       if(units>0n){
-        const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"challenge",args:[id],value:bond});
-        await monadClient.waitForTransactionReceipt({hash:transaction});
-        transactions.push({action:"challengeDemo",id:id.toString(),transaction});
+        await write("challengeDemo",id.toString(),()=>wallet.writeContract({address:contract,abi:openerAbi,functionName:"challenge",args:[id],value:bond}));
       }
     }
   }
@@ -243,8 +250,7 @@ export async function maintainMarkets(){
     const [, ,latestResultAt,marketTotal,resultCount,,,finalized]=epoch;
     if(!finalized&&marketTotal>0&&resultCount===marketTotal&&now>=latestResultAt+challengePeriod){
       try{
-        const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"finalizeEpoch",args:[BigInt(epochId)]});
-        await monadClient.waitForTransactionReceipt({hash:transaction});transactions.push({action:"finalizeEpoch",id:String(epochId),transaction});
+        await write("finalizeEpoch",String(epochId),()=>wallet.writeContract({address:contract,abi:openerAbi,functionName:"finalizeEpoch",args:[BigInt(epochId)]}));
       }catch{/* An unresolved challenge keeps finalization safely locked. */}
     }
   }

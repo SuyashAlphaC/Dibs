@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {discoveryPriority, qualifiesForDiscovery} from "./discovery-quality";
+import {discoveryPriority, hasPromotionalSpam, qualifiesForDiscovery} from "./discovery-quality";
 
 const now = Date.parse("2026-09-28T10:00:00Z") / 1_000;
 const strong = {
@@ -19,6 +19,18 @@ test("discovery quality accepts early substantive casts from established quality
 test("discovery quality rejects greetings and low-quality authors",()=>{
   assert.equal(qualifiesForDiscovery({...strong,text:"gm everyone"},now),false);
   assert.equal(qualifiesForDiscovery({...strong,author:{...strong.author,score:0.2}},now),false);
+});
+
+test("discovery quality rejects referral promotions and engagement spam",()=>{
+  assert.equal(hasPromotionalSpam("Join me on FidCaster and get 250 bonus points from my referral link"),true);
+  assert.equal(qualifiesForDiscovery({...strong,text:"Join me on FidCaster and get 250 bonus points from my referral link today."},now),false);
+  assert.equal(qualifiesForDiscovery({...strong,text:"A real observation with enough context #one #two #three #four #five"},now),false);
+  assert.equal(qualifiesForDiscovery({...strong,text:"A thoughtful analysis mentioning @one @two @three @four @five @six @seven"},now),false);
+});
+
+test("discussion of incentive design is not mistaken for a referral promotion",()=>{
+  const analysis={...strong,text:"Airdrops often fail when incentives reward extraction instead of durable community participation."};
+  assert.equal(qualifiesForDiscovery(analysis,now),true);
 });
 
 test("quality priority favors stronger authors without ignoring recency",()=>{

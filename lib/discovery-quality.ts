@@ -20,6 +20,9 @@ export type DiscoveryPolicy = {
   minAuthorAgeDays: number;
   minCastCharacters: number;
   minCastWords: number;
+  maxHashtags: number;
+  maxMentions: number;
+  maxLinks: number;
 };
 
 export const DEFAULT_DISCOVERY_POLICY: DiscoveryPolicy = {
@@ -29,7 +32,29 @@ export const DEFAULT_DISCOVERY_POLICY: DiscoveryPolicy = {
   minAuthorAgeDays: 30,
   minCastCharacters: 48,
   minCastWords: 8,
+  maxHashtags: 4,
+  maxMentions: 6,
+  maxLinks: 2,
 };
+
+const PROMOTIONAL_PATTERNS = [
+  /\bjoin me on\b/i,
+  /\b(?:get|earn|receive)\s+\d[\d,.]*\s+(?:bonus\s+)?points?\b/i,
+  /\b(?:use|enter)\s+(?:my\s+)?(?:referral|invite|promo)\s+code\b/i,
+  /\breferral\s+(?:link|bonus|code)\b/i,
+  /\bclaim\s+(?:your\s+)?(?:free|bonus|airdrop)\b/i,
+  /\b(?:free|guaranteed)\s+(?:tokens?|money|mon)\b/i,
+];
+
+export function hasPromotionalSpam(text: string, policy: DiscoveryPolicy = DEFAULT_DISCOVERY_POLICY) {
+  const hashtags = text.match(/(^|\s)#[\p{L}\p{N}_]+/gu)?.length ?? 0;
+  const mentions = text.match(/(^|\s)@[\w.-]+/g)?.length ?? 0;
+  const links = text.match(/https?:\/\/\S+/gi)?.length ?? 0;
+  return PROMOTIONAL_PATTERNS.some(pattern => pattern.test(text))
+    || hashtags > policy.maxHashtags
+    || mentions > policy.maxMentions
+    || links > policy.maxLinks;
+}
 
 export function castEngagement(cast: DiscoveryCandidate) {
   return (cast.reactions?.likes_count ?? 0)
@@ -58,7 +83,8 @@ export function qualifiesForDiscovery(
     && authorScore >= policy.minAuthorScore
     && authorAgeDays >= policy.minAuthorAgeDays
     && text.length >= policy.minCastCharacters
-    && words >= policy.minCastWords;
+    && words >= policy.minCastWords
+    && !hasPromotionalSpam(text, policy);
 }
 
 export function discoveryPriority(cast: DiscoveryCandidate, nowSeconds: number) {

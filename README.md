@@ -14,7 +14,7 @@ Hackathon judges: see the [submission guide](./SUBMISSION.md) and the live [/evi
 - Envio indexer for epochs, markets, positions, timeouts, allocations, settlements, and scout reputation; the feed polls indexed stake totals for live ranking.
 - Chainlink CRE workflow for observation consensus, deterministic quality scoring, evidence hashing, Monad settlement reports, and secondary challenge review.
 - ERC-165 CRE settlement receiver with Keystone Forwarder authentication, optional workflow-ID pinning, chain-bound reports, and a strict settlement-function allowlist.
-- Authenticated market keeper with fail-closed kill switches, bounded epoch funding, a retained-balance guard, exact 24-hour epochs, lifecycle expiry, and finalization.
+- Authenticated market keeper with fail-closed kill switches, bounded epoch funding, a retained-balance guard before every write, per-run transaction ceilings, exact 24-hour epochs, lifecycle expiry, and finalization.
 - Privy-authenticated Farcaster nominations that can open eligible casts only inside an existing keeper-funded epoch and can never create or fund epochs.
 - Quality-gated discovery that requires an established Farcaster account, a Neynar score of at least `0.6`, and substantive root-cast text before a market can open.
 - Farcaster Mini App SDK bootstrap, hosted manifest, launch metadata, and compliant icon/splash/social assets.
@@ -86,7 +86,7 @@ cd ../oracle && npm test && npm run typecheck
 
 1. Set `CRE_FORWARDER_ADDRESS` to the official forwarder for the target Monad network. Confirm the address for your CRE tenant with `cre workflow supported-chains --output json`.
 2. Run `contracts/script/Deploy.s.sol`. It deploys Dibs, deploys `DibsSettlementReceiver`, and makes the receiver Dibs' oracle atomically in one broadcast.
-3. Configure `MARKET_OPENER_PRIVATE_KEY` and `CRON_SECRET`; set explicit `MARKET_EPOCH_SEED_MON`, `MARKET_MAX_EPOCH_SEED_MON`, and `MARKET_MIN_OPERATOR_BALANCE_MON` limits. Enable `MARKET_AUTOMATION_ENABLED` and `MARKET_OPENING_ENABLED` only after validating those limits. The keeper opens only casts younger than 30 minutes with fewer than 25 interactions.
+3. Configure `MARKET_OPENER_PRIVATE_KEY` and `CRON_SECRET`; set explicit `MARKET_EPOCH_SEED_MON`, `MARKET_MAX_EPOCH_SEED_MON`, `MARKET_MIN_OPERATOR_BALANCE_MON`, `MAX_MARKETS_PER_RUN`, and `MAX_MAINTENANCE_TRANSACTIONS_PER_RUN` limits. Enable `MARKET_AUTOMATION_ENABLED` and `MARKET_OPENING_ENABLED` only after validating those limits. The keeper opens only substantive root casts younger than 30 minutes with fewer than 25 interactions; referral promotions, bonus/airdrop solicitations, and hashtag/mention/link spam are rejected before any chain write.
 4. Put the Dibs deployment address and block in `indexer/config.yaml`, deploy the indexer, and expose its GraphQL URL to the frontend.
 5. Configure Privy, Neynar, and transaction sponsorship.
 6. Put the **receiver address** in `oracle/config.testnet.json`. For the hackathon submission, run the reproducible `simulation-settings` target documented in `oracle/SIMULATION_EVIDENCE.md`. Production registration still awaits Chainlink organization deploy-access approval; only after deployment should the receiver be pinned to the returned workflow ID.

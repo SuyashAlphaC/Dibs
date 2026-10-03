@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {parseEther} from "viem";
-import {assertOperatorCanSpend,marketAutomationPolicy} from "./operator-safety";
+import {assertOperatorBalanceFloor,assertOperatorCanSpend,marketAutomationPolicy} from "./operator-safety";
 
 test("market automation is fail-closed and unfunded by default",()=>{
   const policy=marketAutomationPolicy({});
@@ -21,7 +21,14 @@ test("operator balance retains the configured floor after seeding",()=>{
   assert.throws(()=>assertOperatorCanSpend(parseEther("0.519"),policy),/balance guard/);
 });
 
+test("every automated transaction respects the retained balance floor",()=>{
+  const policy=marketAutomationPolicy({MARKET_MIN_OPERATOR_BALANCE_MON:"0.5"});
+  assert.doesNotThrow(()=>assertOperatorBalanceFloor(parseEther("0.5001"),policy));
+  assert.throws(()=>assertOperatorBalanceFloor(parseEther("0.5"),policy),/retained balance floor/);
+});
+
 test("market and epoch caps reject unsafe values",()=>{
   assert.throws(()=>marketAutomationPolicy({MAX_MARKETS_PER_RUN:"100"}),/between 1 and 10/);
   assert.throws(()=>marketAutomationPolicy({PUBLIC_NOMINATION_MARKET_CAP:"0"}),/between 1 and 50/);
+  assert.throws(()=>marketAutomationPolicy({MAX_MAINTENANCE_TRANSACTIONS_PER_RUN:"21"}),/between 1 and 20/);
 });
