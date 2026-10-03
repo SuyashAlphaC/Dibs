@@ -8,7 +8,6 @@ import {useScoutDashboard} from "@/components/use-scout-dashboard";
 import {Icon} from "@/components/shared/icons";
 import {Avatar} from "@/components/shared/avatar";
 import type {CastMarket,LiveScoutSignal} from "@/lib/types";
-import {ScoutAssistant} from "@/components/scout-assistant";
 
 const nav = [
   {href:"/discover",label:"Home",icon:"discover" as const},
@@ -70,7 +69,6 @@ export function AppShell({children}: {children: React.ReactNode}) {
           <p>{identity.authenticated?`${dashboard?.calls??0} onchain calls`:"Connect to build reputation"}</p>
         </div>
         <Link className="evidence-link" href="/evidence"><Icon name="spark"/><span><strong>Judge evidence</strong><small>Live system proof</small></span><i>→</i></Link>
-        <ScoutAssistant markets={markets}/>
         <Link className="side-profile" href="/profile">{identity.farcaster?<Avatar name={accountName} src={identity.farcaster.avatarUrl} size={38}/>:<span className="wallet-avatar-fallback"><Icon name="profile"/></span>}<span><strong>{accountName}</strong><small>{identity.authenticated?identity.chainReady?"Monad Testnet":"Switching network":"Wallet not connected"}</small></span>{identity.authenticated&&<span className="online-dot"/>}</Link>
       </aside>
       <main className="main-content" id="main-content" tabIndex={-1}>{children}<footer className="site-footer"><span>© 2026 Dibs · Social discovery on Monad testnet</span><nav aria-label="Product and trust links"><Link href="/evidence">Evidence</Link><Link href="/privacy">Privacy</Link><a href="https://github.com/SuyashAlphaC/Dibs" target="_blank" rel="noreferrer">Source</a><a href="https://github.com/SuyashAlphaC/Dibs/issues" target="_blank" rel="noreferrer">Contact</a><a href="/.well-known/security.txt">Security</a></nav></footer></main>
