@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/markets/open",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

@@ -92,12 +92,21 @@ cd ../oracle && npm test && npm run typecheck
 6. Put the **receiver address** in `oracle/config.testnet.json`. For the hackathon submission, run the reproducible `simulation-settings` target documented in `oracle/SIMULATION_EVIDENCE.md`. Production registration still awaits Chainlink organization deploy-access approval; only after deployment should the receiver be pinned to the returned workflow ID.
 7. Rehearse one normal settlement and one challenged/bot-filtered settlement before recording the demo.
 
-The production keeper is invoked every ten minutes by
-`.github/workflows/market-keeper.yml`. The endpoint rejects requests without the shared bearer
+The production keeper is invoked automatically by the deployed Vercel Cron and can also be
+invoked by GitHub Actions (`.github/workflows/market-keeper.yml`) as a recovery path. The GitHub
+workflow runs on a ten-minute schedule when GitHub dispatches it.
+The endpoint rejects requests without the shared bearer
 secret, retries transient failures, and then checks `/api/health` for the Envio/oracle queue. The
 schedule intentionally runs at minutes `3,13,23,33,43,53` to avoid GitHub's documented
 top-of-hour congestion window. Farcaster ownership for `dibs-metropolis.vercel.app` is signed by FID `2459338`; the
 association is stored in Vercel and served through the production manifest.
+
+The deployed app also configures a five-minute Vercel Cron for `/api/markets/open`. Vercel sends
+the `CRON_SECRET` bearer automatically when that production environment variable is present, so
+market opening and lifecycle maintenance do not depend on a user clicking the UI or manually
+dispatching GitHub Actions. GitHub's keeper remains a recovery and audit path. The endpoint is
+idempotent at the contract boundary and refuses to spend when the operator safety floor or
+epoch limits would be violated.
 
 Automation is fail-closed: unset switches perform no writes, the seed defaults to zero in code,
 the configured seed may not exceed the explicit cap, and the operator must retain the configured

@@ -37,10 +37,19 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
   const [receipt,setReceipt]=useState<{market:CastMarket;rank:number}|null>(null);
   const [refreshSignal,setRefreshSignal]=useState(0);
   const categories = ["All","AI","Crypto","Social","Culture"];
+  function categoryMatches(market:CastMarket,filter:string){
+    if(filter==="All")return true;
+    const text=`${market.category} ${market.author.displayName} ${market.text}`.toLowerCase();
+    if(filter==="AI")return /\b(ai|artificial intelligence|machine learning|llm|agentic|model|inference|robotics)\b/.test(text);
+    if(filter==="Crypto")return ["crypto","tokens","ethereum.org","onchain"].some(value=>market.category.toLowerCase().includes(value))||/\b(crypto|token|ethereum|bitcoin|defi|onchain|monad|chain)\b/.test(text);
+    if(filter==="Social")return ["social","farcaster"].some(value=>market.category.toLowerCase().includes(value))||/\b(social|farcaster|community|creator|friends|culture)\b/.test(text);
+    if(filter==="Culture")return ["culture","collectibles"].some(value=>market.category.toLowerCase().includes(value))||/\b(art|music|culture|collectible|fashion|film|design)\b/.test(text);
+    return market.category===filter;
+  }
   const query=initialQuery.trim().toLowerCase();
   const visible = useMemo(()=>marketList.filter((market)=>{
     if(query&&!`${market.author.displayName} ${market.author.username} ${market.text} ${market.category}`.toLowerCase().includes(query))return false;
-    if(category!=="All"&&market.category!==category)return false;
+    if(!categoryMatches(market,category))return false;
     if(mode==="opened")return market.ageMinutes<=30;
     if(mode==="early")return market.status==="active"||market.status==="closing";
     return true;
@@ -132,7 +141,7 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
     <div className="mobile-discovery-switch" role="group" aria-label="Mobile discovery view"><button className={mobileView==="stack"?"active":""} onClick={()=>setMobileView("stack")}>Dibs Stack</button><button className={mobileView==="feed"?"active":""} onClick={()=>setMobileView("feed")}>Feed</button></div>
     <div className="feed-label"><span>{visible.length} signal{visible.length===1?"":"s"}{query?` matching “${initialQuery.trim()}”`:""}</span><span>{dataSource==="envio"?"Live · Envio indexed":dataSource==="demo"?"Preview · not stakeable":dataSource==="loading"?"Loading live index":"Service unavailable"}</span></div>
     {mobileView==="stack"&&<MobileDibsStack markets={visible} onDibs={startDibs}/>}<section className={`market-feed ${mobileView==="stack"?"mobile-feed-hidden":""}`} aria-labelledby="live-markets-title"><h2 className="sr-only" id="live-markets-title">Live Farcaster discovery markets</h2>{visible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
-    {!visible.length&&<section className="empty-state search-empty"><strong>{dataSource==="loading"?"Connecting to the live index…":dataSource==="unavailable"?"Live markets are temporarily unavailable":marketList.length?"No matching signals":"No live markets right now"}</strong><p>{dataSource==="loading"?"This should take only a moment.":dataSource==="unavailable"?"Dibs will retry automatically. No preview data is being presented as live.":marketList.length?"Try a Farcaster username, topic, or phrase from a cast.":"The market radar scans for eligible early casts every few minutes."}</p></section>}
+    {!visible.length&&<section className="empty-state search-empty"><strong>{dataSource==="loading"?"Connecting to the live index…":dataSource==="unavailable"?"Live markets are temporarily unavailable":marketList.length?(mode==="early"?"No early markets are open right now.":mode==="opened"?"No newly opened markets are indexed right now.":"No matching signals"):"No live markets right now"}</strong><p>{dataSource==="loading"?"This should take only a moment.":dataSource==="unavailable"?"Dibs will retry automatically. No preview data is being presented as live.":marketList.length?"The live index currently contains settled signals. Try All or wait for the next keeper scan.":"The market radar scans for eligible early casts every few minutes."}</p>{marketList.length&&<button className="secondary-button" onClick={()=>{setMode("trending");setCategory("All");}}>Show all indexed signals</button>}</section>}
     <section className="discovery-explainer" aria-labelledby="how-dibs-works">
       <p className="eyebrow">Transparent discovery</p><h2 id="how-dibs-works">How does Dibs find early Farcaster signals?</h2>
       <p>Dibs turns early social discovery into an accountable onchain signal. Scouts back promising casts with MON, collective conviction determines discovery rank, and quality-weighted engagement settles each market.</p>
