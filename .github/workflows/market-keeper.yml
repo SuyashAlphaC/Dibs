@@ -4,7 +4,7 @@ on:
   schedule:
     # Avoid the top-of-hour congestion window where GitHub documents that
     # scheduled jobs can be delayed or dropped.
-    - cron: "3,13,23,33,43,53 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
