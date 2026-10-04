@@ -7,7 +7,7 @@ import type {MarketCandidate} from "@/lib/types";
 import {useIdentity} from "@/components/identity-provider";
 
 type CandidatePayload={candidates?:MarketCandidate[];error?:string};
-type OpenPayload={opened?:Array<{hash:string;transaction:string;candidate?:MarketCandidate}>;error?:string};
+type OpenPayload={opened?:Array<{hash:string;transaction:string;candidate?:MarketCandidate}>;error?:string;retryAfterSeconds?:number};
 
 export function MarketCandidateStrip({onMarketOpened}:{onMarketOpened:(candidate:MarketCandidate,transaction:string)=>void}){
   const identity=useIdentity();
@@ -16,12 +16,23 @@ export function MarketCandidateStrip({onMarketOpened}:{onMarketOpened:(candidate
   const [identifier,setIdentifier]=useState("");
   const [opening,setOpening]=useState<string|null>(null);
   const [notice,setNotice]=useState<string|null>(null);
+  const [cooldownSeconds,setCooldownSeconds]=useState(0);
+
+  useEffect(()=>{
+    if(cooldownSeconds<=0)return;
+    const timer=window.setInterval(()=>setCooldownSeconds(value=>Math.max(0,value-1)),1000);
+    return()=>window.clearInterval(timer);
+  },[cooldownSeconds]);
 
   const refresh=useCallback(async()=>{
     try{
       const response=await fetch("/api/markets/candidates",{cache:"no-store"});
       const payload=await response.json() as CandidatePayload;
       if(response.ok)setCandidates(payload.candidates??[]);
+      else if(!notice)setNotice(payload.error??"Fresh Farcaster candidates are temporarily unavailable.");
+    }catch(error){
+      if(error instanceof DOMException&&error.name==="AbortError")return;
+      if(!notice)setNotice("Fresh Farcaster candidates are temporarily unavailable. Try again shortly.");
     }finally{setLoading(false);}
   },[]);
 
@@ -40,7 +51,15 @@ export function MarketCandidateStrip({onMarketOpened}:{onMarketOpened:(candidate
       if(!token)throw new Error("Your Privy session expired. Reconnect and try again.");
       const response=await fetch("/api/markets/candidates",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${token}`},body:JSON.stringify({identifier:input})});
       const payload=await response.json() as OpenPayload;
-      if(!response.ok)throw new Error(payload.error??"The market could not be opened");
+      if(!response.ok){
+        if(response.status===429){
+          const retryAfter=payload.retryAfterSeconds ?? (Number(response.headers.get("retry-after")) || 30);
+          setCooldownSeconds(retryAfter);
+          setNotice(`Nomination cooldown active. Try again in ${retryAfter} seconds.`);
+          return;
+        }
+        throw new Error(payload.error??"The market could not be opened");
+      }
       const opened=payload.opened?.[0];
       if(!opened)throw new Error("No market transaction was returned");
       setCandidates(current=>current.filter(item=>item.hash!==candidate.hash));
@@ -67,7 +86,7 @@ export function MarketCandidateStrip({onMarketOpened}:{onMarketOpened:(candidate
     {candidates.length>0&&<div className="candidate-list">{candidates.slice(0,4).map(candidate=><article key={candidate.hash}>
       <div className="candidate-author"><Avatar name={candidate.author.displayName} src={candidate.author.avatarUrl} size={32}/><span><strong>{candidate.author.displayName}</strong><small>@{candidate.author.username} · {formatAgeMinutes(candidate.ageMinutes)}</small></span><b>{candidate.category}</b></div>
       <p>{candidate.text}</p>
-      <footer><span>♡ {candidate.likes} &nbsp; ↻ {candidate.recasts} &nbsp; ◌ {candidate.replies}</span><button onClick={()=>void open(candidate,candidate.hash)} disabled={Boolean(opening)}>{opening===candidate.hash?"Opening on Monad…":"Open market →"}</button></footer>
+      <footer><span>♡ {candidate.likes} &nbsp; ↻ {candidate.recasts} &nbsp; ◌ {candidate.replies}</span><button onClick={()=>void open(candidate,candidate.hash)} disabled={Boolean(opening)||cooldownSeconds>0}>{opening===candidate.hash?"Opening on Monad…":cooldownSeconds>0?`Wait ${cooldownSeconds}s`:"Open market →"}</button></footer>
     </article>)}</div>}
     {!loading&&!candidates.length&&!notice&&<p className="candidate-empty">No qualifying cast in the current scan. Paste a fresh cast URL above or wait for the next 30-second scan.</p>}
     <small className="candidate-rule">Authenticated Farcaster scouts may nominate eligible root casts into an existing keeper-funded epoch. Public nominations never create or fund epochs.</small>

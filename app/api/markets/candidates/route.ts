@@ -48,7 +48,14 @@ export async function POST(request:Request){
   if(!policy.publicNominationsEnabled)return NextResponse.json({error:"Public nominations are temporarily paused"},{status:503});
   const client=scout.userId;
   const lastAttempt=attempts.get(client)??0;
-  if(Date.now()-lastAttempt<RATE_LIMIT_MS)return NextResponse.json({error:"Wait 30 seconds before nominating another cast"},{status:429});
+  const elapsed=Date.now()-lastAttempt;
+  if(elapsed<RATE_LIMIT_MS){
+    const retryAfterSeconds=Math.max(1,Math.ceil((RATE_LIMIT_MS-elapsed)/1000));
+    return NextResponse.json(
+      {error:`Wait ${retryAfterSeconds} seconds before nominating another cast`,retryAfterSeconds},
+      {status:429,headers:{"retry-after":String(retryAfterSeconds)}},
+    );
+  }
   let body:unknown;
   try{body=await request.json();}catch{return NextResponse.json({error:"Invalid request body"},{status:400});}
   const requested=identifier((body as {identifier?:unknown})?.identifier);
