@@ -22,6 +22,12 @@ set -a
 source "${ENV_FILE}"
 set +a
 
+if [[ "${CRE_SETTLEMENT_MODE:-simulation}" == "don" ]]; then
+  echo "CRE_SETTLEMENT_MODE=don: settlement is owned by the active Chainlink DON workflow." >&2
+  echo "Use 'cd oracle && cre workflow get . --target staging-settings --json' to inspect it; this script is only the isolated simulation-broadcast fallback." >&2
+  exit 3
+fi
+
 RPC_URL="${MONAD_RPC_URL:-${NEXT_PUBLIC_MONAD_RPC_URL:-}}"
 OWNER_KEY="${CRE_RECEIVER_OWNER_PRIVATE_KEY:-${DEPLOYER_PRIVATE_KEY:-}}"
 

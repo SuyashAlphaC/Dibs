@@ -19,7 +19,19 @@ cre workflow simulate . --target staging-settings
 cre workflow deploy . --target staging-settings --yes
 ```
 
-While DON deployment access is pending, a ready testnet observation can be submitted through the
+With deployment access enabled, verify the registered workflow with:
+
+```sh
+cre workflow get . --target staging-settings --json
+cre workflow list --output json
+```
+
+The deploy command returns a workflow ID. Pin that exact ID on the deployed receiver using its owner
+key, then set `NEXT_PUBLIC_CRE_SETTLEMENT_MODE=don` in the app. The receiver remains fail-closed until
+the ID is pinned. The DON's cron trigger owns settlement execution; GitHub only monitors deployment
+health and does not run the local broadcast simulator.
+
+For a local fallback or reproducible hackathon rehearsal, a ready testnet observation can be submitted through the
 CRE broadcast simulator from the repository root:
 
 ```sh
@@ -38,10 +50,9 @@ challenge-resolution deadline, leaving room for the cron trigger and transaction
 the simulation-only receiver; the latter remains the DON/production configuration. Never point a
 production workflow at the MockForwarder receiver.
 
-## Hackathon simulation
+## Historical hackathon simulation
 
-The hackathon submission uses the checked-in deterministic simulation target while production
-deployment access is pending. It exercises CRE HTTP consensus, quality filtering, evidence hashing,
+The repository retains a checked-in deterministic simulation target for reproducibility. It exercises CRE HTTP consensus, quality filtering, evidence hashing,
 Monad settlement calldata encoding, and report preparation without broadcasting a transaction:
 
 ```sh
@@ -55,5 +66,5 @@ latest reproducible output and hashes are recorded in
 The dedicated simulation receiver must trust the network's official MockForwarder, while the
 production receiver must trust the KeystoneForwarder. Query the current addresses with
 `cre workflow supported-chains --output json`. Keep the simulation receiver's expected workflow ID
-unset because MockForwarder omits production metadata. After DON deployment, pin the production
-receiver with `setExpectedWorkflowId(bytes32)` before broadcasting reports.
+unset because MockForwarder omits production metadata. The production receiver is now pinned to the
+active DON workflow above and must never be replaced by the MockForwarder receiver.

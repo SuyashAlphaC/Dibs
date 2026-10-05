@@ -52,12 +52,12 @@ timeouts, challenge timeouts, and epoch finalization in addition to opening elig
 
 ## CRE safety state
 
-The receiver is temporarily pinned to
-`0xfd3e92890c58024b698d936cf54ff046bfae874768c2d0de4eeb4208d02bcc78`
-and therefore fails closed until the CRE workflow is registered. After deployment, replace it
-with the real workflow ID using `setExpectedWorkflowId(bytes32)`.
+The receiver is pinned to the active DON workflow:
 
-- Lock transaction: `0x0b1d773a532c41a39b0c77302c6002de5cee72c9cd7db25a447db05b192809fd`
+- Workflow: `dibs-settlement-testnet`
+- Workflow ID: `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`
+- Pin transaction: `0x634670a6e3f863121e8ab254f7f8a1327fa575bddd86c02b71655ef5ad82cae1`
+- CRE registry status: `ACTIVE`
 
 ### Workflow readiness — 2026-09-27
 
@@ -69,7 +69,7 @@ with the real workflow ID using `setExpectedWorkflowId(bytes32)`.
 - Workflow simulation: passing with result `0` while no market is awaiting a result.
 - Compiled binary hash: `b74267d0de96a54f0fa599781c38d5cb9c374e955b82f2da12857c1249ae50e5`.
 - Config hash: `df0fba1c906b5d7633840818a9fdeb93d2c263611ecacec60bbf2188b4babb91`.
-- Production deployment access: requested through `cre account access`; Chainlink approval is pending.
+- Production deployment access: enabled through `cre account access`.
 
 ### Hackathon simulation evidence — 2026-09-27
 

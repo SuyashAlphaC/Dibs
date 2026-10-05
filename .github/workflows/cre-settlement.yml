@@ -1,4 +1,4 @@
-name: Dibs CRE settlement keeper
+name: Dibs CRE DON monitor
 
 on:
   schedule:
@@ -18,44 +18,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      MONAD_RPC_URL: ${{ secrets.MONAD_RPC_URL }}
-      DEPLOYER_PRIVATE_KEY: ${{ secrets.CRE_RECEIVER_OWNER_PRIVATE_KEY }}
-      CRE_RECEIVER_OWNER_PRIVATE_KEY: ${{ secrets.CRE_RECEIVER_OWNER_PRIVATE_KEY }}
-      CRE_ETH_PRIVATE_KEY: ${{ secrets.CRE_RECEIVER_OWNER_PRIVATE_KEY }}
       CRE_API_KEY: ${{ secrets.CRE_API_KEY }}
-      NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS: ${{ vars.DIBS_CONTRACT_ADDRESS }}
-      CRE_SETTLEMENT_RECEIVER_ADDRESS: ${{ vars.CRE_SETTLEMENT_RECEIVER_ADDRESS }}
-      CRE_SIMULATION_RECEIVER_ADDRESS: ${{ vars.CRE_SIMULATION_RECEIVER_ADDRESS }}
-      CRE_MOCK_FORWARDER_ADDRESS: ${{ vars.CRE_MOCK_FORWARDER_ADDRESS }}
-      DIBS_ENV_FILE: .env.github-actions
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - uses: foundry-rs/foundry-toolchain@v1
-      - name: Validate required secrets
-        run: |
-          test -n "${MONAD_RPC_URL}" || { echo "Missing MONAD_RPC_URL secret"; exit 1; }
-          test -n "${CRE_RECEIVER_OWNER_PRIVATE_KEY}" || { echo "Missing CRE_RECEIVER_OWNER_PRIVATE_KEY secret"; exit 1; }
-          test -n "${CRE_API_KEY}" || { echo "Missing CRE_API_KEY secret"; exit 1; }
-      - name: Install dependencies
-        run: |
-          npm ci
-          (cd oracle && npm ci)
-          bun --version
       - name: Install verified CRE CLI
         run: |
           curl -sSL https://app.chain.link/cre/install.sh | bash
           echo "${HOME}/.cre" >> "${GITHUB_PATH}"
           echo "${HOME}/.cre/bin" >> "${GITHUB_PATH}"
-      - name: Settle ready markets
+      - name: Verify active DON workflow
         run: |
-          touch .env.github-actions
-          npm run cre:broadcast
+          test -n "${CRE_API_KEY}" || { echo "Missing CRE_API_KEY secret"; exit 1; }
+          cd oracle
+          cre workflow get . --target staging-settings --json | tee ../cre-don-status.json
+          jq -e '.workflow.status == "ACTIVE" and .workflow.workflowId != null' ../cre-don-status.json >/dev/null
       - name: Verify system health
         run: curl --fail-with-body --silent --show-error https://dibs-metropolis.vercel.app/api/health
