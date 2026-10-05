@@ -131,8 +131,12 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #64dd
 
 /* Dialogs, assistant and feedback */
 .modal-backdrop,.assistant-backdrop{background:rgba(2,8,14,.78);backdrop-filter:blur(8px)}
-.dibs-modal,.assistant-panel{border:1px solid var(--line2);border-radius:8px;background:#0d1b2b;box-shadow:0 28px 80px rgba(0,0,0,.5)}
-.dibs-modal{padding:22px}.dibs-modal h2{font-size:19px}.modal-icon{border-radius:5px;background:rgba(69,211,207,.1);color:#64ddd8}.modal-cast{border-color:var(--line);border-radius:5px;background:#091624}.modal-market-logic{border-color:var(--line2);border-radius:5px;background:rgba(69,211,207,.06)}
+.dibs-modal,.assistant-panel{border:1px solid var(--line2);border-radius:12px;background:linear-gradient(145deg,#102131,#0b1723);box-shadow:0 28px 80px rgba(0,0,0,.58)}
+.dibs-modal{width:min(510px,100%);padding:28px}.dibs-modal h2{font-size:23px;letter-spacing:-.035em}.modal-icon{border-radius:8px;background:rgba(69,211,207,.1);color:#64ddd8}.modal-cast{border-color:rgba(93,183,190,.22);border-radius:9px;background:rgba(5,15,24,.7)}.modal-cast p{line-height:1.5}.modal-market-logic{border-color:rgba(93,183,190,.34);border-radius:8px;background:rgba(69,211,207,.06)}
+.confirm-grid{gap:6px;margin:18px 0;padding:6px;border:1px solid rgba(93,183,190,.25);border-radius:10px;background:#07131e}
+.confirm-grid>div,.confirm-grid>div:first-child{min-width:0;min-height:70px;padding:12px 14px;border:1px solid rgba(93,183,190,.16);border-radius:7px;background:linear-gradient(160deg,#0d1c29,#08121b)!important}
+.confirm-grid>div:first-child{border-color:rgba(88,217,211,.45)}
+.confirm-grid span{font-size:8px;letter-spacing:.04em;text-transform:uppercase;color:#7f9aa5}.confirm-grid strong{margin-top:7px;color:#eef8f6;font-size:15px;white-space:nowrap}.confirm-grid>div:first-child strong{color:#75e1c3}.confirm-grid>div:last-child strong{color:#64ddd8}
 .assistant-panel>header{border-color:var(--line)}.assistant-panel h2{font-size:19px}.assistant-modes{border:1px solid var(--line);border-radius:5px;background:#091624}.assistant-modes button.active{background:#45d3cf;color:#061116}.assistant-pick,.assistant-empty{border:1px solid var(--line);border-radius:6px;background:#091624}.assistant-why svg{color:#58d9d3}.assistant-panel>footer{background:#091624;color:#78909d}.assistant-panel>footer>span{color:#58d9d3}
 .toast{right:18px;bottom:18px;padding:12px;border:1px solid var(--line2);border-radius:6px;background:#0d1b2b}.toast>span{background:rgba(69,211,207,.1);color:#61ddd7}
 .site-footer{border-color:var(--line);color:#536a78}.site-footer a:hover{color:#5ddbd5}
