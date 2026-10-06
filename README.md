@@ -94,14 +94,28 @@ cd ../oracle && npm test && npm run typecheck
 6. Put the **receiver address** in `oracle/config.testnet.json`, deploy with `cre workflow deploy . --target staging-settings --yes`, and pin the returned workflow ID on the receiver. Confirm `cre workflow get . --target staging-settings --json` reports `ACTIVE` before enabling DON mode in the app.
 7. Rehearse one normal settlement and one challenged/bot-filtered settlement before recording the demo.
 
-The production keeper is invoked automatically by GitHub Actions
-(`.github/workflows/market-keeper.yml`) on a five-minute schedule. Manual dispatch is reserved
-for recovery and evidence capture.
-The endpoint rejects requests without the shared bearer
-secret, retries transient failures, and then checks `/api/health` for the Envio/oracle queue. The
-schedule avoids a top-of-hour-only trigger, but GitHub may still delay scheduled workflows under
-load. Farcaster ownership for `dibs-metropolis.vercel.app` is signed by FID `2459338`; the
-association is stored in Vercel and served through the production manifest.
+The production keeper is scheduled through Upstash QStash every five minutes. QStash calls the
+authenticated `/api/markets/open` endpoint directly, retries transient failures three times, and
+redacts the forwarded bearer token from its logs. GitHub Actions remains available only as a
+manual recovery path after cutover.
+
+To configure or update the schedule, add `QSTASH_TOKEN` and the existing
+`DIBS_CRON_SECRET` to GitHub Actions secrets, then run:
+
+```sh
+gh workflow run qstash-market-keeper.yml -f operation=configure
+gh run watch --workflow qstash-market-keeper.yml
+```
+
+The configure operation uses the stable schedule ID `dibs-market-keeper-production`, so rerunning
+it updates the existing schedule instead of creating duplicates. Verify it at any time with
+`gh workflow run qstash-market-keeper.yml -f operation=verify`. Roll back by running the workflow
+with `operation=delete` and re-enabling the schedule block in `market-keeper.yml`.
+
+Do not remove the GitHub schedule until QStash verification reports an active, unpaused schedule
+and at least one successful delivery appears in QStash logs. Farcaster ownership for
+`dibs-metropolis.vercel.app` is signed by FID `2459338`; the association is stored in Vercel and
+served through the production manifest.
 
 The endpoint is idempotent at the contract boundary and refuses to spend when the operator safety
 floor or epoch limits would be violated. For stricter production SLOs, run the same endpoint from

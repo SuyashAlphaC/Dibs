@@ -1,0 +1,42 @@
+name: Manage QStash market keeper
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Configure, verify, or delete the production schedule
+        required: true
+        default: configure
+        type: choice
+        options:
+          - configure
+          - verify
+          - delete
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dibs-qstash-market-keeper-management
+  cancel-in-progress: false
+
+jobs:
+  manage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
+      DIBS_CRON_SECRET: ${{ secrets.DIBS_CRON_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate required secrets
+        run: |
+          test -n "${QSTASH_TOKEN}" || { echo "Missing QSTASH_TOKEN secret"; exit 1; }
+          if [[ "${{ inputs.operation }}" == "configure" ]]; then
+            test -n "${DIBS_CRON_SECRET}" || { echo "Missing DIBS_CRON_SECRET secret"; exit 1; }
+          fi
+      - name: Manage QStash schedule
+        run: bash scripts/qstash-market-keeper.sh "${{ inputs.operation }}"
+      - name: Verify configured schedule
+        if: ${{ inputs.operation == 'configure' }}
+        run: bash scripts/qstash-market-keeper.sh verify
