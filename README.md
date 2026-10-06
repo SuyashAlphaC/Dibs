@@ -96,7 +96,8 @@ cd ../oracle && npm test && npm run typecheck
 
 The production keeper is scheduled through Upstash QStash every five minutes. QStash calls the
 authenticated `/api/markets/open` endpoint directly, retries transient failures three times, and
-redacts the forwarded bearer token from its logs. GitHub Actions remains available only as a
+redacts the forwarded bearer token from its logs. The management script defaults to QStash's
+US region (`qstash-us-east-1.upstash.io`) to match the Vercel `iad1` deployment. GitHub Actions remains available only as a
 manual recovery path after cutover.
 
 To configure or update the schedule, add `QSTASH_TOKEN` and the existing

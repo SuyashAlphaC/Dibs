@@ -2,7 +2,7 @@
 set -euo pipefail
 
 operation="${1:-}"
-qstash_base_url="${QSTASH_BASE_URL:-https://qstash.upstash.io}"
+qstash_base_url="${QSTASH_BASE_URL:-https://qstash-us-east-1.upstash.io}"
 schedule_id="${QSTASH_SCHEDULE_ID:-dibs-market-keeper-production}"
 keeper_url="${DIBS_KEEPER_URL:-https://dibs-metropolis.vercel.app/api/markets/open}"
 keeper_cron="${DIBS_KEEPER_CRON:-*/5 * * * *}"
