@@ -113,8 +113,8 @@ it updates the existing schedule instead of creating duplicates. Verify it at an
 `gh workflow run qstash-market-keeper.yml -f operation=verify`. Roll back by running the workflow
 with `operation=delete` and re-enabling the schedule block in `market-keeper.yml`.
 
-Do not remove the GitHub schedule until QStash verification reports an active, unpaused schedule
-and at least one successful delivery appears in QStash logs. Farcaster ownership for
+The GitHub workflow retains `workflow_dispatch` as the recovery path but has no scheduled trigger.
+Restore its schedule only if the QStash schedule is deleted or paused. Farcaster ownership for
 `dibs-metropolis.vercel.app` is signed by FID `2459338`; the association is stored in Vercel and
 served through the production manifest.
 

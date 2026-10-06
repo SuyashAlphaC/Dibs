@@ -1,10 +1,8 @@
 name: Dibs market keeper
 
 on:
-  schedule:
-    # Avoid the top-of-hour congestion window where GitHub documents that
-    # scheduled jobs can be delayed or dropped.
-    - cron: "*/5 * * * *"
+  # QStash owns the production five-minute schedule. Keep this workflow as an
+  # operator-controlled recovery path and for evidence capture only.
   workflow_dispatch:
 
 permissions:
