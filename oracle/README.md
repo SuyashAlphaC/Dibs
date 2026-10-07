@@ -1,6 +1,6 @@
 # Dibs Chainlink CRE workflow
 
-The workflow runs every 15 minutes, fetches closing Farcaster-market observations, applies the quality filter deterministically, commits an evidence hash, and writes chain-bound `submitResult` reports to `DibsSettlementReceiver` on Monad.
+The production workflow runs every two minutes, fetches up to eight closing Farcaster-market observations, applies the quality filter independently on each DON node, agrees on compact settlement decisions, and writes chain-bound `submitResult` reports to `DibsSettlementReceiver` on Monad.
 
 The application exposes `/api/oracle/observations`. It selects closed, unresolved markets from Envio, fetches each cast's likes, recasts, and reply tree from Neynar, and derives account age from Neynar's `registered_at` field plus account quality from `score`/`experimental.neynar_user_score`. The deterministic market close time is used as `observedAt`, so CRE nodes hash identical evidence rather than their individual wall clocks.
 
@@ -11,6 +11,42 @@ Quality rules are executable rather than narrative:
 - Likes, recasts, and replies receive weights of 1.0, 2.5, and 3.0.
 - The opening quality-weighted baseline is subtracted.
 - Canonically ordered evidence is hashed and stored with the result.
+
+## Quota-aware execution
+
+The HTTP callback scores observations **before** `consensusIdenticalAggregation`, returning only
+the market ID, score, evidence hash, interaction counts and challenge decision. Consensus therefore
+does not carry the raw interaction list. A regression fixture above 25 KB retains every interaction,
+the same score, and the same evidence hash after compaction. The consensus budget is 12 KB, safely
+below the 25 KB CRE quota. The live eight-market dry run produced a 2,350-byte consensus payload.
+
+The API selects eight markets at most, prioritizes challenges, then orders by close time and market
+ID. Whole observations are packed within a 180 KB HTTP budget. Oversized or unavailable observations
+are explicitly deferred; their evidence is never truncated and their score is never replaced with
+zero. The remaining markets stay queued for the next scheduled execution. Expired submission or
+challenge windows are left to the keeper's existing permissionless timeout path.
+
+The HTTP request uses CRE's 10-second timeout and a short shared cache. Neynar collection is bounded
+to seven seconds and isolated per market. Before each report, CRE reads the production receiver's
+core and the market's onchain state to skip already-submitted results or resolved challenges. A run
+uses at most nine EVM reads, below the 15-call quota. Production rejects labelled simulation inputs.
+
+The monitor checks a recent successful execution and the exact receiver workflow ID, retaining status
+artifacts even on failure. Deployment `ACTIVE` alone is not evidence of successful execution.
+
+When updating, pause, deploy, and pin the new nonzero workflow ID before activating:
+
+```sh
+cre workflow pause . --target staging-settings --yes
+cre workflow deploy . --target staging-settings --yes
+# From the repository root, with production receiver and owner configuration in .env:
+node --env-file=.env --import tsx scripts/pin-cre-workflow.ts 0x<NEW_WORKFLOW_ID>
+# Back in oracle:
+cre workflow activate . --target staging-settings --yes
+```
+
+The pin script verifies ownership, chain, core and official Forwarder before sending the owner
+transaction, then verifies the confirmed pin. It refuses a zero workflow ID.
 
 Run `npm test` and `npm run typecheck` locally. `config.testnet.json` targets the deployed **receiver** address (not the core Dibs address). Authenticate the CRE CLI, then simulate and deploy the workflow through the checked-in target manifests:
 

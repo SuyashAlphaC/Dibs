@@ -14,8 +14,12 @@ reports through the official Monad testnet Keystone Forwarder.
 - Workflow ID: `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`
 - Cron trigger: every fifteen minutes
 - Observation endpoint: `https://dibs-metropolis.vercel.app/api/oracle/observations`
-- Latest status verified on 2026-10-07: `SUCCESS`, with no workflow errors
+- Historical status captured earlier on 2026-10-07: `SUCCESS`, with no workflow errors
 - Captured registry response: [`workflow-status.json`](workflow-status.json)
+
+This is evidence for the original deployment. The workflow was updated on 2026-10-07 after a
+consensus payload limit incident. Its current ID, pin and successful scheduled recovery are recorded
+in [`../cre-recovery-2026-10-07`](../cre-recovery-2026-10-07/README.md).
 
 ## Authenticated onchain boundary
 

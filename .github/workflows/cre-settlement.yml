@@ -30,11 +30,29 @@ jobs:
           curl -sSL https://app.chain.link/cre/install.sh | bash
           echo "${HOME}/.cre" >> "${GITHUB_PATH}"
           echo "${HOME}/.cre/bin" >> "${GITHUB_PATH}"
-      - name: Verify active DON workflow
+      - name: Verify active DON workflow and recent successful execution
         run: |
           test -n "${CRE_API_KEY}" || { echo "Missing CRE_API_KEY secret"; exit 1; }
           cd oracle
           cre workflow get . --target staging-settings --json | tee ../cre-don-status.json
-          jq -e '.workflow.status == "ACTIVE" and .workflow.workflowId != null' ../cre-don-status.json >/dev/null
+          cre execution list dibs-settlement-testnet --limit 5 --output json > ../cre-don-executions.json
+          cd ..
+          node --test scripts/verify-cre-health.test.mjs
+          node scripts/verify-cre-health.mjs cre-don-status.json cre-don-executions.json
       - name: Verify system health
-        run: curl --fail-with-body --silent --show-error https://dibs-metropolis.vercel.app/api/health
+        run: |
+          curl --fail-with-body --silent --show-error https://dibs-metropolis.vercel.app/api/health > system-health.json
+          jq -e --arg workflow "$(jq -r '.workflow.workflowId' cre-don-status.json)" '
+            .ok == true and .services.creReceiver.workflowPinned == true and
+            (.services.creReceiver.workflowId | ltrimstr("0x")) == ($workflow | ltrimstr("0x"))
+          ' system-health.json >/dev/null
+      - name: Retain DON execution evidence on success or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cre-don-health
+          path: |
+            cre-don-status.json
+            cre-don-executions.json
+            system-health.json
+          if-no-files-found: ignore

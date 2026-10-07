@@ -1,0 +1,93 @@
+{
+  "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb",
+  "executions": [
+    {
+      "uuid": "e4eb4ed1-23aa-498a-b16d-2f7e399ba545",
+      "workflowUUID": "e73520e5-f83a-47fb-87ec-49d8bc500914",
+      "workflowName": "dibs-settlement-testnet",
+      "status": "SUCCESS",
+      "startedAt": "2026-10-07T16:20:02Z",
+      "finishedAt": "2026-10-07T16:20:09Z",
+      "duration": "7s",
+      "creditUsed": "0"
+    },
+    {
+      "uuid": "0b069363-7597-495f-9233-5a7f19f8f2c9",
+      "workflowUUID": "e73520e5-f83a-47fb-87ec-49d8bc500914",
+      "workflowName": "dibs-settlement-testnet",
+      "status": "SUCCESS",
+      "startedAt": "2026-10-07T16:18:01Z",
+      "finishedAt": "2026-10-07T16:18:08Z",
+      "duration": "7s",
+      "creditUsed": "0"
+    },
+    {
+      "uuid": "a2d06ad3-a459-43a7-847c-5a30bf8e9c08",
+      "workflowUUID": "e73520e5-f83a-47fb-87ec-49d8bc500914",
+      "workflowName": "dibs-settlement-testnet",
+      "status": "SUCCESS",
+      "startedAt": "2026-10-07T16:16:01Z",
+      "finishedAt": "2026-10-07T16:16:06Z",
+      "duration": "5s",
+      "creditUsed": "0"
+    },
+    {
+      "uuid": "9095e0cd-a03c-4402-b146-1d4ee46ac73d",
+      "workflowUUID": "e73520e5-f83a-47fb-87ec-49d8bc500914",
+      "workflowName": "dibs-settlement-testnet",
+      "status": "SUCCESS",
+      "startedAt": "2026-10-07T16:14:01Z",
+      "finishedAt": "2026-10-07T16:14:40Z",
+      "duration": "39s",
+      "creditUsed": "0"
+    },
+    {
+      "uuid": "6c5feef2-13af-4aeb-be70-e36055d44060",
+      "workflowUUID": "e73520e5-f83a-47fb-87ec-49d8bc500914",
+      "workflowName": "dibs-settlement-testnet",
+      "status": "SUCCESS",
+      "startedAt": "2026-10-07T16:12:01Z",
+      "finishedAt": "2026-10-07T16:12:45Z",
+      "duration": "44s",
+      "creditUsed": "0"
+    },
+    {
+      "uuid": "14604536-2be0-46be-8458-2d6b9caeda9e",
+      "workflowUUID": "e73520e5-f83a-47fb-87ec-49d8bc500914",
+      "workflowName": "dibs-settlement-testnet",
+      "status": "SUCCESS",
+      "startedAt": "2026-10-07T16:10:02Z",
+      "finishedAt": "2026-10-07T16:10:54Z",
+      "duration": "52s",
+      "creditUsed": "0"
+    },
+    {
+      "uuid": "1397d5b2-5453-4d5a-8c7c-83b14955ada5",
+      "workflowUUID": "e73520e5-f83a-47fb-87ec-49d8bc500914",
+      "workflowName": "dibs-settlement-testnet",
+      "status": "SUCCESS",
+      "startedAt": "2026-10-07T16:08:01Z",
+      "finishedAt": "2026-10-07T16:08:47Z",
+      "duration": "46s",
+      "creditUsed": "0"
+    },
+    {
+      "uuid": "467103b4-84ac-46ec-a294-8db1bc8d0ec9",
+      "workflowUUID": "e73520e5-f83a-47fb-87ec-49d8bc500914",
+      "workflowName": "dibs-settlement-testnet",
+      "status": "SUCCESS",
+      "startedAt": "2026-10-07T16:06:01Z",
+      "finishedAt": "2026-10-07T16:06:45Z",
+      "duration": "44s",
+      "creditUsed": "0"
+    }
+  ],
+  "queue": {
+    "observations": [],
+    "deferred": [],
+    "failed": [],
+    "pending": 0,
+    "expired": [],
+    "batchLimit": 8
+  }
+}

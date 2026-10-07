@@ -9,7 +9,7 @@
 - CRE receiver: `0x78B87B938cbdd9453F2dA6adA043d74d792C9A81`
 - CRE forwarder: `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`
 - Active CRE workflow: `dibs-settlement-testnet`
-- Workflow ID: `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`
+- Workflow ID: `0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb`
 - Judge-facing CRE console: https://dibs-metropolis.vercel.app/simulation
 - Live acceptance ledger: https://dibs-metropolis.vercel.app/evidence
 - Public integration health: https://dibs-metropolis.vercel.app/api/health
@@ -59,8 +59,10 @@ flowchart LR
 ## Integrity boundary
 
 Dibs settlement is deployed on the Chainlink DON. The active private-registry workflow
-`dibs-settlement-testnet` runs every fifteen minutes, reaches consensus over production
-observations, and sends reports through the official Monad testnet Keystone Forwarder. The
+`dibs-settlement-testnet` runs every two minutes in bounded batches. Each DON node computes the
+quality score and canonical evidence hash before consensus, so large interaction lists do not enter
+the consensus observation. Onchain reads skip already-processed markets before reports are sent
+through the official Monad testnet Keystone Forwarder. The
 receiver accepts that forwarder, requires the pinned workflow ID, binds reports to chain `10143`
 and the deployed Dibs contract, and forwards only `submitResult` or `resolveChallenge` calls.
 
@@ -75,6 +77,11 @@ reproduction evidence. They are not the production settlement claim. The observa
 aggregates Neynar data before CRE consensus; this external-data trust boundary is disclosed rather
 than presented as direct node-to-Neynar access. `/evidence` also keeps unrelated field proofs—such
 as a live upheld challenge and non-zero scout reward claim—pending until genuine users create them.
+
+The October 7 consensus incident is retained with its verified recovery in
+[`evidence/cre-recovery-2026-10-07`](evidence/cre-recovery-2026-10-07/README.md): ten DON nodes agreed
+on a 2,350-byte payload, and the first recovered scheduled run delivered eight authenticated Monad
+reports. This includes real receipts and regression tests rather than an increased quota or fixture.
 
 New markets store a versioned quality-weighted opening baseline. Legacy markets remain readable and use the documented raw-interaction compatibility path.
 

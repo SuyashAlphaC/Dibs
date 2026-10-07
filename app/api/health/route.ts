@@ -5,6 +5,8 @@ import {monadClient} from "@/lib/contract";
 import {getEnvioIndexStatus,getMarketsAwaitingResult} from "@/lib/live-markets";
 import {assertOperatorCanSpend,marketAutomationPolicy} from "@/lib/operator-safety";
 import {getPrivyIntegrationStatus} from "@/lib/privy-integration";
+import {getOracleTiming} from "@/lib/oracle-policy";
+import {splitOracleQueue} from "@/lib/oracle-batch";
 
 export const dynamic="force-dynamic";
 
@@ -39,7 +41,7 @@ async function contractHealth(){
   if(receiverCore.toLowerCase()!==core.toLowerCase())throw new Error("receiver targets a different Dibs core");
   const mode=process.env.NEXT_PUBLIC_CRE_SETTLEMENT_MODE==="don"?"don":"simulation-broadcast";
   if(mode==="don"&&workflowId===zeroHash)throw new Error("DON workflow guard is not pinned");
-  return {core,receiver:oracle,mode,workflowPinned:workflowId!==zeroHash};
+  return {core,receiver:oracle,mode,workflowPinned:workflowId!==zeroHash,workflowId};
 }
 
 async function automationHealth(){
@@ -56,22 +58,23 @@ function failure(reason:unknown){return {status:"unavailable" as const,reason:re
 
 export async function GET(){
   const checkedAt=new Date().toISOString();
-  const [indexer,queue,rpc,neynar,receiver,automation]=await Promise.allSettled([
-    getEnvioIndexStatus(),getMarketsAwaitingResult(),monadClient.getBlockNumber(),neynarHealth(),contractHealth(),automationHealth(),
+  const [indexer,queue,rpc,neynar,receiver,automation,timing]=await Promise.allSettled([
+    getEnvioIndexStatus(),getMarketsAwaitingResult(),monadClient.getBlockNumber(),neynarHealth(),contractHealth(),automationHealth(),getOracleTiming(),
   ]);
   const indexValue=indexer.status==="fulfilled"?indexer.value:null;
   const queueValue=queue.status==="fulfilled"?queue.value:null;
   const privy=getPrivyIntegrationStatus();
-  const ok=Boolean(indexValue&&queueValue&&rpc.status==="fulfilled"&&neynar.status==="fulfilled"&&receiver.status==="fulfilled"&&automation.status==="fulfilled"&&privy.status==="ready");
+  const expired=queueValue&&timing.status==="fulfilled"?splitOracleQueue(queueValue,Math.floor(Date.now()/1_000),timing.value).expired:[];
+  const ok=Boolean(indexValue&&queueValue&&rpc.status==="fulfilled"&&neynar.status==="fulfilled"&&receiver.status==="fulfilled"&&automation.status==="fulfilled"&&timing.status==="fulfilled"&&!expired.length&&privy.status==="ready");
   const actions=(queueValue??[]).reduce((counts,market)=>{counts[market.action]++;return counts;},{submit:0,resolve:0});
   const services={
     envio:indexValue?{status:"ready" as const,...indexValue}:failure(indexer.status==="rejected"?indexer.reason:"query failed"),
-    oracleQueue:queueValue?{status:"ready" as const,awaitingResults:queueValue.length,actions}:failure(queue.status==="rejected"?queue.reason:"query failed"),
+    oracleQueue:queueValue&&timing.status==="fulfilled"?{status:expired.length?"degraded" as const:"ready" as const,awaitingResults:queueValue.length,actions,expired}:failure(queue.status==="rejected"?queue.reason:"queue or deadline policy unavailable"),
     monad:rpc.status==="fulfilled"?{status:"ready" as const,blockNumber:rpc.value.toString()}:failure(rpc.reason),
     neynar:neynar.status==="fulfilled"?{status:"ready" as const}:failure(neynar.reason),
     privy,
     creReceiver:receiver.status==="fulfilled"?{status:"ready" as const,...receiver.value}:failure(receiver.reason),
     marketAutomation:automation.status==="fulfilled"?automation.value:failure(automation.reason),
   };
-  return NextResponse.json({ok,checkedAt,services},{status:ok?200:503,headers:{"cache-control":"no-store"}});
+  return NextResponse.json({ok,scope:"dependencies-and-queue; DON execution is verified by the CRE monitor",checkedAt,services},{status:ok?200:503,headers:{"cache-control":"no-store"}});
 }

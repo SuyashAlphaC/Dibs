@@ -1,6 +1,7 @@
 {
   "schedule": "0 */15 * * * *",
   "observationApiUrl": "https://dibs-metropolis.vercel.app/api/oracle/challenge-demo",
+  "allowSimulation": true,
   "evm": {
     "chainSelectorName": "monad-testnet",
     "chainId": 10143,

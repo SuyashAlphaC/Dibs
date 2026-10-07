@@ -53,11 +53,12 @@ GitHub Actions is retained only as an operator-triggered recovery path.
 
 ## CRE safety state
 
-The receiver is pinned to the active DON workflow:
+The receiver is pinned to the updated DON workflow:
 
 - Workflow: `dibs-settlement-testnet`
-- Workflow ID: `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`
-- Pin transaction: `0x634670a6e3f863121e8ab254f7f8a1327fa575bddd86c02b71655ef5ad82cae1`
+- Workflow ID: `0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb`
+- Pin transaction: `0x2b98996faa3ec8229c24f7c2243728f5093ca2590c8532c38c62782605c71148`
+- Updated on 2026-10-07 with bounded batches, node-side scoring before consensus, and a two-minute trigger.
 - CRE registry status: `ACTIVE`
 
 ### Live DON deployment — 2026-10-05

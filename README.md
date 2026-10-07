@@ -30,7 +30,7 @@ This is hackathon software and has not been audited. Do not use it with producti
 - CRE receiver: `0x78B87B938cbdd9453F2dA6adA043d74d792C9A81`
 - CRE forwarder: `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`
 - Active CRE workflow: `dibs-settlement-testnet`
-- Workflow ID: `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`
+- Workflow ID: `0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb`
 - Deployment block: `65900523`
 - Compliant live epoch: `2`, exactly 24 hours, funded with `1 MON`, three eligible markets
 
@@ -141,10 +141,14 @@ the keeper to advance existing lifecycle state. Public nominations require a ver
 session plus a linked Farcaster account, are rate-limited per Privy user, emit a structured audit
 record, respect the epoch market cap, and never create a funded epoch.
 
-The deployed CRE workflow owns settlement execution on the DON; it wakes every fifteen minutes from
-its Cron trigger and writes through the pinned Keystone receiver. `.github/workflows/cre-settlement.yml`
-is now a monitor only: it checks that the private-registry workflow remains `ACTIVE` and that the
-production app health endpoint is green. It must never invoke the local `simulate --broadcast` fallback
+The deployed CRE workflow owns settlement execution on the DON; it wakes every two minutes from
+its Cron trigger and processes up to eight markets through the pinned Keystone receiver. Each node
+scores full observations before consensus, reducing the agreed payload to scores and evidence hashes.
+Onchain reads skip stale indexer results. `.github/workflows/cre-settlement.yml` is a monitor only:
+it requires an `ACTIVE` workflow, a recent `SUCCESS` execution without errors, and a receiver pin
+matching the deployed workflow ID. It retains execution evidence even on failure. `/api/health`
+checks dependencies and the queue; execution success is checked separately by the monitor.
+The monitor must never invoke the local `simulate --broadcast` fallback
 when `NEXT_PUBLIC_CRE_SETTLEMENT_MODE=don`. The fallback remains available only by explicitly setting
 `CRE_SETTLEMENT_MODE=simulation` in a local environment.
 

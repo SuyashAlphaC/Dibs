@@ -99,6 +99,7 @@ export type SettlementMarket = {
   closesAt: number;
   action: "submit" | "resolve";
   previousQualityGrowthScore: number;
+  resultSubmittedAt?: number;
 };
 
 type NeynarCast = {
@@ -560,6 +561,7 @@ export async function getMarketsAwaitingResult(): Promise<SettlementMarket[] | n
     closesAt: Number(market.closesAt),
     action: market.status === "CHALLENGED" ? "resolve" : "submit",
     previousQualityGrowthScore: Number(market.qualityGrowthScore),
+    resultSubmittedAt: Number(market.resultSubmittedAt),
   }));
 }
 

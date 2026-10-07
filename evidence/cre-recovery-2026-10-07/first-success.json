@@ -1,0 +1,57 @@
+{
+  "execution": {
+    "uuid": "467103b4-84ac-46ec-a294-8db1bc8d0ec9",
+    "status": "SUCCESS",
+    "startedAt": "2026-10-07T16:06:01Z",
+    "finishedAt": "2026-10-07T16:06:45Z"
+  },
+  "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb",
+  "nodeCount": 10,
+  "logs": [
+    {
+      "nodeID": "Node 1",
+      "timestamp": "2026-10-07T16:06:06Z",
+      "message": "consensusBytes=2350 batch=8 deferred=0"
+    },
+    {
+      "nodeID": "Node 1",
+      "timestamp": "2026-10-07T16:06:10Z",
+      "message": "market=37 action=submit score=3290 upheld=false accepted=2 rejected=1 report=submitted tx=0x604ca26641aa8dd124046b5fcc48247be65f3f3928d99c91a637d85f834cb7fb"
+    },
+    {
+      "nodeID": "Node 1",
+      "timestamp": "2026-10-07T16:06:15Z",
+      "message": "market=38 action=submit score=790 upheld=false accepted=1 rejected=1 report=submitted tx=0x13304069347d1546bc3b92f77a691a28f1ce9abb511672ac15f1fdcfd4e5e63c"
+    },
+    {
+      "nodeID": "Node 1",
+      "timestamp": "2026-10-07T16:06:20Z",
+      "message": "market=39 action=submit score=8880 upheld=false accepted=8 rejected=2 report=submitted tx=0x351b572081dc7fbb6a5797774964a22e498349e7f4aae78b9f8f8b2c628cc94f"
+    },
+    {
+      "nodeID": "Node 1",
+      "timestamp": "2026-10-07T16:06:24Z",
+      "message": "market=40 action=submit score=0 upheld=false accepted=0 rejected=1 report=submitted tx=0xdef52b0f67de69fbecee420b5b3d7e818ce23d661f7104ded171da4a64a7f2a1"
+    },
+    {
+      "nodeID": "Node 1",
+      "timestamp": "2026-10-07T16:06:29Z",
+      "message": "market=41 action=submit score=0 upheld=false accepted=0 rejected=1 report=submitted tx=0x5f40d67a63d044503d5735b64a33bf63f5ff485a685b03f410a2eee376688215"
+    },
+    {
+      "nodeID": "Node 1",
+      "timestamp": "2026-10-07T16:06:34Z",
+      "message": "market=42 action=submit score=0 upheld=false accepted=0 rejected=1 report=submitted tx=0x6072422772c973c697c59b94628e4819554a05a1f9550c0fab8c937d901df283"
+    },
+    {
+      "nodeID": "Node 1",
+      "timestamp": "2026-10-07T16:06:40Z",
+      "message": "market=43 action=submit score=740 upheld=false accepted=1 rejected=0 report=submitted tx=0xc5cb3a20a8590f6fc42f36cf36f1198573dda61191bf893b08493e8b045e83fb"
+    },
+    {
+      "nodeID": "Node 1",
+      "timestamp": "2026-10-07T16:06:45Z",
+      "message": "market=44 action=submit score=45555 upheld=false accepted=34 rejected=9 report=submitted tx=0xc1f34fc0b8926ab00ffc221185f005860fb46bb2e8cacaa489238719032dc2e4"
+    }
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "verifiedAt": "2026-10-07T16:11:55.621Z",
+  "verification": "All eight receipts read from Monad RPC; destination, status, receiver workflow ID, result market ID and score checked against DON logs.",
+  "receipts": [
+    {
+      "marketId": 37,
+      "score": "3290",
+      "transaction": "0x604ca26641aa8dd124046b5fcc48247be65f3f3928d99c91a637d85f834cb7fb",
+      "block": "69013396",
+      "status": "success",
+      "destination": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+      "events": [
+        "SettlementReportForwarded",
+        "ResultSubmitted"
+      ],
+      "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb"
+    },
+    {
+      "marketId": 38,
+      "score": "790",
+      "transaction": "0x13304069347d1546bc3b92f77a691a28f1ce9abb511672ac15f1fdcfd4e5e63c",
+      "block": "69013411",
+      "status": "success",
+      "destination": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+      "events": [
+        "SettlementReportForwarded",
+        "ResultSubmitted"
+      ],
+      "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb"
+    },
+    {
+      "marketId": 39,
+      "score": "8880",
+      "transaction": "0x351b572081dc7fbb6a5797774964a22e498349e7f4aae78b9f8f8b2c628cc94f",
+      "block": "69013426",
+      "status": "success",
+      "destination": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+      "events": [
+        "SettlementReportForwarded",
+        "ResultSubmitted"
+      ],
+      "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb"
+    },
+    {
+      "marketId": 40,
+      "score": "0",
+      "transaction": "0xdef52b0f67de69fbecee420b5b3d7e818ce23d661f7104ded171da4a64a7f2a1",
+      "block": "69013441",
+      "status": "success",
+      "destination": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+      "events": [
+        "SettlementReportForwarded",
+        "ResultSubmitted"
+      ],
+      "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb"
+    },
+    {
+      "marketId": 41,
+      "score": "0",
+      "transaction": "0x5f40d67a63d044503d5735b64a33bf63f5ff485a685b03f410a2eee376688215",
+      "block": "69013457",
+      "status": "success",
+      "destination": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+      "events": [
+        "SettlementReportForwarded",
+        "ResultSubmitted"
+      ],
+      "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb"
+    },
+    {
+      "marketId": 42,
+      "score": "0",
+      "transaction": "0x6072422772c973c697c59b94628e4819554a05a1f9550c0fab8c937d901df283",
+      "block": "69013472",
+      "status": "success",
+      "destination": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+      "events": [
+        "SettlementReportForwarded",
+        "ResultSubmitted"
+      ],
+      "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb"
+    },
+    {
+      "marketId": 43,
+      "score": "740",
+      "transaction": "0xc5cb3a20a8590f6fc42f36cf36f1198573dda61191bf893b08493e8b045e83fb",
+      "block": "69013492",
+      "status": "success",
+      "destination": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+      "events": [
+        "SettlementReportForwarded",
+        "ResultSubmitted"
+      ],
+      "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb"
+    },
+    {
+      "marketId": 44,
+      "score": "45555",
+      "transaction": "0xc1f34fc0b8926ab00ffc221185f005860fb46bb2e8cacaa489238719032dc2e4",
+      "block": "69013509",
+      "status": "success",
+      "destination": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+      "events": [
+        "SettlementReportForwarded",
+        "ResultSubmitted"
+      ],
+      "workflowId": "0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb"
+    }
+  ]
+}

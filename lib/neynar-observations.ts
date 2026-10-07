@@ -10,12 +10,13 @@ type NeynarReaction = {object: "likes" | "recasts"; user: NeynarUser};
 type NeynarReply = {author: NeynarUser; direct_replies?: NeynarReply[]};
 type CursorPage = {next?: {cursor?: string | null}};
 
-async function neynar(path: string, params: Record<string, string>, apiKey: string) {
+async function neynar(path: string, params: Record<string, string>, apiKey: string, signal?: AbortSignal) {
   const url = new URL(`https://api.neynar.com${path}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   const response = await fetch(url, {
     headers: {"x-api-key": apiKey, "x-neynar-experimental": "true"},
     cache: "no-store",
+    signal,
   });
   if (!response.ok) throw new Error(`Neynar ${path} returned ${response.status}`);
   return response.json() as Promise<unknown>;
@@ -51,7 +52,7 @@ async function paged<T>(load: (cursor?: string) => Promise<{items: T[]; cursor?:
   return items;
 }
 
-export async function collectQualifiedInteractions(castHash: string, observedAt: number, apiKey: string) {
+export async function collectQualifiedInteractions(castHash: string, observedAt: number, apiKey: string, signal?: AbortSignal) {
   const [reactions, replies] = await Promise.all([
     paged<NeynarReaction>(async (cursor) => {
       const payload = await neynar("/v2/farcaster/reactions/cast/", {
@@ -59,7 +60,7 @@ export async function collectQualifiedInteractions(castHash: string, observedAt:
         types: "all",
         limit: "100",
         ...(cursor ? {cursor} : {}),
-      }, apiKey) as CursorPage & {reactions?: NeynarReaction[]};
+      }, apiKey, signal) as CursorPage & {reactions?: NeynarReaction[]};
       return {items: payload.reactions ?? [], cursor: payload.next?.cursor};
     }),
     paged<NeynarReply>(async (cursor) => {
@@ -70,7 +71,7 @@ export async function collectQualifiedInteractions(castHash: string, observedAt:
         limit: "50",
         sort_type: "chron",
         ...(cursor ? {cursor} : {}),
-      }, apiKey) as CursorPage & {conversation?: {cast?: {direct_replies?: NeynarReply[]}}};
+      }, apiKey, signal) as CursorPage & {conversation?: {cast?: {direct_replies?: NeynarReply[]}}};
       return {
         items: flattenReplies(payload.conversation?.cast?.direct_replies ?? []),
         cursor: payload.next?.cursor,
