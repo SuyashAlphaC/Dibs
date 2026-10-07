@@ -1,3 +1,7 @@
+# Dibs working repository
+
+Use `/home/suyashagrawal/Downloads/Dibs` as the canonical working repository for all Dibs modifications, commands, verification, and delivery. Do not make future Dibs changes in separate worktrees or copies unless the user explicitly requests it. Preserve existing user changes and never force-push without explicit authorization.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
