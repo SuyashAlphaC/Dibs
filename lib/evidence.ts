@@ -1,5 +1,6 @@
 import "server-only";
 import {getEnvioIndexStatus,getLiveMarkets,getMarketsAwaitingResult,getScoutLeaderboard} from "@/lib/live-markets";
+import {getPrivyIntegrationStatus} from "@/lib/privy-integration";
 
 export type EvidenceState="verified"|"partial"|"pending";
 export type EvidenceCheck={id:string;title:string;detail:string;state:EvidenceState;href?:string};
@@ -15,9 +16,11 @@ export async function getEvidenceSnapshot(){
   const claimed=leaderboard.reduce((sum,scout)=>sum+scout.claimed,0);
   const challenged=settled.filter(market=>market.challengeUpheld===true);
   const isDon=process.env.NEXT_PUBLIC_CRE_SETTLEMENT_MODE==="don";
+  const privy=getPrivyIntegrationStatus();
   const mode=isDon?"Chainlink DON":"CRE simulation-broadcast";
   const checks:EvidenceCheck[]=[
     {id:"integrations",title:"Live data plane",detail:indexer?`Envio indexes ${indexer.marketCount} markets; Monad, Neynar and receiver health are exposed publicly.`:"The Envio index is unavailable.",state:indexer?"verified":"pending",href:"/api/health"},
+    {id:"privy",title:"Privy identity-to-action boundary",detail:privy.status==="ready"?`Embedded wallets, Farcaster linking and server token verification are configured${privy.sponsoredTransactionsEnabled?"; gas sponsorship is enabled for embedded-wallet transactions":""}.`:"The Privy client and server verification boundary are not both configured.",state:privy.status==="ready"?"verified":privy.status==="partial"?"partial":"pending",href:"/privy"},
     {id:"participation",title:"Genuine scout participation",detail:`${leaderboard.length} unique onchain scouts are indexed. Submission target: 10 genuine Farcaster scouts.`,state:leaderboard.length>=10?"verified":leaderboard.length?"partial":"pending",href:"/profile"},
     {id:"identity",title:"Farcaster identity resolution",detail:`${resolvedIdentities} of ${leaderboard.length} indexed scouts currently resolve to a Farcaster identity.`,state:leaderboard.length>0&&resolvedIdentities===leaderboard.length?"verified":resolvedIdentities?"partial":"pending",href:"/profile"},
     {id:"ranking",title:"Collective conviction",detail:multiScout.length?`${multiScout.length} market${multiScout.length===1?"":"s"} contain multiple independent scout positions indexed by Envio.`:"No multi-scout market is currently indexed.",state:multiScout.length?"verified":"pending",href:multiScout[0]?`/market/${multiScout[0].id}`:"/discover"},

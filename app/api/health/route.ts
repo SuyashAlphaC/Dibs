@@ -4,6 +4,7 @@ import {privateKeyToAccount} from "viem/accounts";
 import {monadClient} from "@/lib/contract";
 import {getEnvioIndexStatus,getMarketsAwaitingResult} from "@/lib/live-markets";
 import {assertOperatorCanSpend,marketAutomationPolicy} from "@/lib/operator-safety";
+import {getPrivyIntegrationStatus} from "@/lib/privy-integration";
 
 export const dynamic="force-dynamic";
 
@@ -60,13 +61,15 @@ export async function GET(){
   ]);
   const indexValue=indexer.status==="fulfilled"?indexer.value:null;
   const queueValue=queue.status==="fulfilled"?queue.value:null;
-  const ok=Boolean(indexValue&&queueValue&&rpc.status==="fulfilled"&&neynar.status==="fulfilled"&&receiver.status==="fulfilled"&&automation.status==="fulfilled");
+  const privy=getPrivyIntegrationStatus();
+  const ok=Boolean(indexValue&&queueValue&&rpc.status==="fulfilled"&&neynar.status==="fulfilled"&&receiver.status==="fulfilled"&&automation.status==="fulfilled"&&privy.status==="ready");
   const actions=(queueValue??[]).reduce((counts,market)=>{counts[market.action]++;return counts;},{submit:0,resolve:0});
   const services={
     envio:indexValue?{status:"ready" as const,...indexValue}:failure(indexer.status==="rejected"?indexer.reason:"query failed"),
     oracleQueue:queueValue?{status:"ready" as const,awaitingResults:queueValue.length,actions}:failure(queue.status==="rejected"?queue.reason:"query failed"),
     monad:rpc.status==="fulfilled"?{status:"ready" as const,blockNumber:rpc.value.toString()}:failure(rpc.reason),
     neynar:neynar.status==="fulfilled"?{status:"ready" as const}:failure(neynar.reason),
+    privy,
     creReceiver:receiver.status==="fulfilled"?{status:"ready" as const,...receiver.value}:failure(receiver.reason),
     marketAutomation:automation.status==="fulfilled"?automation.value:failure(automation.reason),
   };

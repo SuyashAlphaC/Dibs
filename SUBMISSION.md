@@ -52,7 +52,7 @@ flowchart LR
 | --- | --- | --- |
 | Monad | Markets, conviction curve, challenge bonds, allocations and claims | Deployed contract plus Foundry lifecycle tests |
 | Envio | Live ranking, positions, activity, settlement and reputation data | Production `/api/casts`, scout ledger and GraphQL-backed profiles |
-| Privy | Wallet authentication, embedded wallet support and Farcaster account linking | Production connect and profile-link flows |
+| Privy | Email/passkey/Farcaster authentication, automatic embedded wallets, Farcaster account linking, server-verified nominations, user-confirmed Monad transactions and embedded-wallet gas sponsorship | Live identity-to-action proof at `/privy`, production health status, and wallet transaction path |
 | Farcaster | Source of eligible casts and Mini App distribution | Valid signed account association and live Mini App manifest |
 | Chainlink CRE | Scheduled DON execution, deterministic quality scoring, challenge re-observation and authenticated Monad report delivery | Active private-registry workflow plus confirmed DON writes and events recorded in `evidence/live-don-settlement` |
 
@@ -92,8 +92,9 @@ cd ../oracle && npm test && npm run typecheck
 ## Demo recording outline
 
 - 0:00–0:20 — Why popularity feeds miss early cultural signal.
-- 0:20–1:00 — Live Farcaster market, Privy wallet and Dibs confirmation.
-- 1:00–1:25 — Conviction and rank move; Envio position appears.
+- 0:20–0:45 — Privy sign-in, automatic embedded wallet and linked Farcaster identity.
+- 0:45–1:00 — User-approved Dibs transaction with sponsored embedded-wallet gas.
+- 1:00–1:25 — Conviction and rank move; the Envio position resolves to the scout identity.
 - 1:25–2:05 — Active CRE DON workflow scores observations and authenticates a Monad report.
 - 2:05–2:35 — Inspect `ResultSubmitted`, `SettlementReportForwarded`, Envio indexing and scout reputation.
 - 2:35–2:50 — Architecture, production trust boundary, and honestly labelled pending field proofs.

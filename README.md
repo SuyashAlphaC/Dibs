@@ -8,6 +8,7 @@ Hackathon judges: see the [submission guide](./SUBMISSION.md) and the live [/evi
 
 - Responsive Next.js feed, market action, settlement console, and scout ledger.
 - Privy Farcaster/email/passkey authentication and embedded-wallet transaction path.
+- Privy-sponsored gas for embedded-wallet transactions, with the MON conviction amount kept explicit and user-approved.
 - Neynar-backed early-cast API with explicit live, unavailable, empty, and labelled preview states.
 - Persistent Privy wallet-to-Farcaster identity resolution for scout cards and ledgers.
 - Native-MON Solidity contract with bounded epochs, linear conviction curves, sponsor funding, permissioned market opening, oracle results, evidence hashes, bonded challenges, per-market payout caps, creator rewards, and pull-based claims.
@@ -71,6 +72,17 @@ Production never substitutes fixtures for live data. Set `NEXT_PUBLIC_DEMO_MODE=
 an explicitly labelled, non-stakeable preview. Add `NEXT_PUBLIC_PRIVY_APP_ID`,
 `PRIVY_APP_SECRET`, and `NEYNAR_API_KEY` to resolve linked Farcaster identities. Add the
 deployed `NEXT_PUBLIC_DIBS_CONTRACT_ADDRESS` to make the Dibs action submit a Monad transaction.
+
+## Privy identity-to-action integration
+
+The public [`/privy`](https://dibs-metropolis.vercel.app/privy) page exposes the complete Privy
+boundary for judges without revealing credentials: familiar sign-in, automatic embedded-wallet
+creation, optional Farcaster linking, server-side access-token verification, user-approved Monad
+transactions, and gas sponsorship for embedded wallets. External wallets remain supported and pay
+their own gas. Sponsorship never hides or subsidizes the MON conviction amount being put at risk.
+
+The reproducible judge flow and implementation map are recorded in
+[`evidence/privy/README.md`](evidence/privy/README.md).
 
 ## Verify
 

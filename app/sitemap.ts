@@ -9,6 +9,7 @@ export default function sitemap():MetadataRoute.Sitemap{
     {url:`${origin}/activity`,lastModified,changeFrequency:"daily",priority:.6},
     {url:`${origin}/simulation`,lastModified,changeFrequency:"weekly",priority:.6},
     {url:`${origin}/evidence`,lastModified,changeFrequency:"hourly",priority:.8},
+    {url:`${origin}/privy`,lastModified,changeFrequency:"weekly",priority:.7},
     {url:`${origin}/profile`,lastModified,changeFrequency:"weekly",priority:.6},
     {url:`${origin}/privacy`,lastModified,changeFrequency:"yearly",priority:.2},
   ];

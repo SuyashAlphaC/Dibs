@@ -22,6 +22,8 @@ type Identity = {
   balance?: string;
   farcaster?: FarcasterIdentity;
   mode: "privy" | "demo";
+  walletKind?: "embedded" | "external" | "demo";
+  sponsorshipAvailable: boolean;
   gasSponsored: boolean;
   login: () => void;
   linkFarcaster: () => void;
@@ -73,6 +75,8 @@ function PrivyIdentity({children}: {children: React.ReactNode}) {
       balance,
       farcaster,
       mode: "privy",
+      walletKind:wallet?wallet.walletClientType==="privy"?"embedded":"external":undefined,
+      sponsorshipAvailable:sponsorshipEnabled,
       gasSponsored,
       login: () => login(),
       linkFarcaster,
@@ -108,6 +112,8 @@ function DemoIdentity({children}: {children: React.ReactNode}) {
       address: authenticated ? "0xD1b5…A143" : undefined,
       balance:authenticated?"12.4":undefined,
       mode: "demo",
+      walletKind:authenticated?"demo":undefined,
+      sponsorshipAvailable:false,
       gasSponsored:false,
       login: () => setAuthenticated(true),
       linkFarcaster: () => undefined,
