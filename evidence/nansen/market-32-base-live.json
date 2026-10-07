@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "source": "nansen",
+  "marketId": "32",
+  "chain": "base",
+  "generatedAt": "2026-10-07T17:13:49.728Z",
+  "status": "ready",
+  "backers": [
+    {
+      "address": "0x335e58172fc8895bc380471972a22ea921152f6d",
+      "spentWei": "10000000000000000",
+      "units": 1,
+      "firstScoutedAt": 1791133616,
+      "leadMinutes": 7,
+      "shareBps": 1333,
+      "contextStatus": "no-records"
+    },
+    {
+      "address": "0x524d430612842357e58d8bb7b04ae51d34747c2c",
+      "spentWei": "11000000000000000",
+      "units": 1,
+      "firstScoutedAt": 1791171504,
+      "leadMinutes": 638,
+      "shareBps": 1466,
+      "contextStatus": "no-records"
+    },
+    {
+      "address": "0xd190944633a34cf679669fa2fa6204cfff4038b6",
+      "spentWei": "12000000000000000",
+      "units": 1,
+      "firstScoutedAt": 1791171556,
+      "leadMinutes": 639,
+      "shareBps": 1600,
+      "contextStatus": "no-records"
+    },
+    {
+      "address": "0xe712abcf226767e24d1243f434ab1638652ac857",
+      "spentWei": "13000000000000000",
+      "units": 1,
+      "firstScoutedAt": 1791171585,
+      "leadMinutes": 639,
+      "shareBps": 1733,
+      "contextStatus": "no-records"
+    },
+    {
+      "address": "0x3c67fc9bbc05ac71db3efff622641bba5653dbff",
+      "spentWei": "14000000000000000",
+      "units": 1,
+      "firstScoutedAt": 1791171622,
+      "leadMinutes": 640,
+      "shareBps": 1866,
+      "contextStatus": "no-records"
+    },
+    {
+      "address": "0xe34876158750e7367d66e60a667f01a506bf10b6",
+      "spentWei": "15000000000000000",
+      "units": 1,
+      "firstScoutedAt": 1791171682,
+      "leadMinutes": 641,
+      "shareBps": 2000,
+      "contextStatus": "no-records"
+    }
+  ],
+  "totalConvictionWei": "75000000000000000",
+  "largestShareBps": 2000,
+  "linkedConvictionBps": 0,
+  "linkedBackers": 0,
+  "links": [],
+  "coverage": {
+    "total": 6,
+    "queried": 6,
+    "succeeded": 6,
+    "withRecords": 0,
+    "truncated": 0,
+    "stale": 0
+  },
+  "queries": [
+    {
+      "address": "0x335e58172fc8895bc380471972a22ea921152f6d",
+      "fetchedAt": "2026-10-07T17:13:44.528Z",
+      "requestId": "ec626d7276cb05076a02d507963f6625",
+      "creditsUsed": 1,
+      "truncated": false
+    },
+    {
+      "address": "0x524d430612842357e58d8bb7b04ae51d34747c2c",
+      "fetchedAt": "2026-10-07T17:13:46.659Z",
+      "requestId": "db962d3ada44290d08366c1c24cb6475",
+      "creditsUsed": 1,
+      "truncated": false
+    },
+    {
+      "address": "0xd190944633a34cf679669fa2fa6204cfff4038b6",
+      "fetchedAt": "2026-10-07T17:13:47.886Z",
+      "requestId": "1db6763a514b1a0c2ec57a28f3471204",
+      "creditsUsed": 1,
+      "truncated": false
+    },
+    {
+      "address": "0xe712abcf226767e24d1243f434ab1638652ac857",
+      "fetchedAt": "2026-10-07T17:13:48.786Z",
+      "requestId": "31863e0f0d678f1f5f328c65e5da9800",
+      "creditsUsed": 1,
+      "truncated": false
+    },
+    {
+      "address": "0x3c67fc9bbc05ac71db3efff622641bba5653dbff",
+      "fetchedAt": "2026-10-07T17:13:49.728Z",
+      "requestId": "4248be0885ec905d23ab6f1a002e6a76",
+      "creditsUsed": 1,
+      "truncated": false
+    },
+    {
+      "address": "0xe34876158750e7367d66e60a667f01a506bf10b6",
+      "fetchedAt": "2026-10-07T17:13:49.728Z",
+      "requestId": "51dcee3fcc851439d462687e34f07c7c",
+      "creditsUsed": 1,
+      "truncated": false
+    }
+  ],
+  "findings": [
+    "The largest wallet supplied 20.0% of scout conviction; protocol seed is excluded.",
+    "No direct connection between market backers was returned in the sampled Nansen records. This does not establish independent ownership.",
+    "Nansen returned no relationship records for the queried addresses on this dataset. Try another context chain if these wallets have activity there."
+  ],
+  "limitations": [
+    "Connections can reflect ordinary transfers or exchange activity. They are not proof of common ownership, Sybil behavior or manipulation.",
+    "External wallet context does not change Dibs rank, reputation, reward eligibility or CRE quality settlement.",
+    "Nansen context and Envio's Dibs staking network are separate datasets; testnet activity is not assumed to be indexed by Nansen.",
+    "At most 8 earliest backers are queried, with the first 100 relationship records per wallet. Missing, failed and truncated data are not evidence of independence."
+  ],
+  "attribution": "Powered by Nansen API",
+  "endpoint": "https://api.nansen.ai/api/v1/profiler/address/related-wallets",
+  "captureMethod": "operator-cli",
+  "historicalSnapshot": true
+}

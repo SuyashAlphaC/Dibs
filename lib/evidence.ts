@@ -2,6 +2,7 @@ import "server-only";
 import {getEnvioIndexStatus,getLiveMarkets,getMarketsAwaitingResult,getScoutLeaderboard} from "@/lib/live-markets";
 import {getPrivyIntegrationStatus} from "@/lib/privy-integration";
 import {nansenIntegrationStatus} from "@/lib/nansen-service";
+import {hasNansenFieldEvidence,nansenFieldReport} from "@/lib/nansen-evidence";
 
 export type EvidenceState="verified"|"partial"|"pending";
 export type EvidenceCheck={id:string;title:string;detail:string;state:EvidenceState;href?:string};
@@ -21,7 +22,7 @@ export async function getEvidenceSnapshot(){
   const nansen=nansenIntegrationStatus();
   const mode=isDon?"Chainlink DON":"CRE simulation-broadcast";
   const checks:EvidenceCheck[]=[
-    {id:"nansen",title:"Nansen conviction intelligence",detail:nansen.enabled&&nansen.configured?"Nansen scans are configured. A genuine market scan with source timestamps and request IDs still needs to be retained as field evidence; configuration alone is not live proof.":"Conviction Lens is implemented but live Nansen access is not enabled and configured. The teaching fixture is not production evidence.",state:nansen.enabled&&nansen.configured?"partial":"pending",href:"/intelligence"},
+    {id:"nansen",title:"Nansen conviction intelligence",detail:nansen.enabled&&nansen.configured&&hasNansenFieldEvidence?`Retained operator API capture: market #${nansenFieldReport.marketId}, ${nansenFieldReport.chain}, ${nansenFieldReport.coverage.succeeded}/${nansenFieldReport.coverage.total} successful queries at ${nansenFieldReport.generatedAt}. No relationship records returned. Historical field evidence, not proof of a fresh authenticated user scan.`:nansen.enabled&&nansen.configured?"Nansen scans are configured; retained successful market evidence still needs verification.":"Live Nansen access is not enabled and configured. Any retained snapshot is historical; the teaching fixture is not production evidence.",state:nansen.enabled&&nansen.configured?"partial":"pending",href:"/intelligence"},
     {id:"integrations",title:"Live data plane",detail:indexer?`Envio indexes ${indexer.marketCount} markets; Monad, Neynar and receiver health are exposed publicly.`:"The Envio index is unavailable.",state:indexer?"verified":"pending",href:"/api/health"},
     {id:"privy",title:"Privy identity-to-action boundary",detail:privy.status==="ready"?`Embedded wallets, Farcaster linking and server token verification are configured${privy.sponsoredTransactionsEnabled?"; gas sponsorship is enabled for embedded-wallet transactions":""}.`:"The Privy client and server verification boundary are not both configured.",state:privy.status==="ready"?"verified":privy.status==="partial"?"partial":"pending",href:"/privy"},
     {id:"participation",title:"Genuine scout participation",detail:`${leaderboard.length} unique onchain scouts are indexed. Submission target: 10 genuine Farcaster scouts.`,state:leaderboard.length>=10?"verified":leaderboard.length?"partial":"pending",href:"/profile"},

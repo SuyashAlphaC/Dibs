@@ -90,12 +90,13 @@ The reproducible judge flow and implementation map are recorded in
 Market pages expose a **Conviction Lens** and feed cards link directly to it. The feature combines
 exact Envio scout stakes with Nansen's `POST /api/v1/profiler/address/related-wallets` endpoint;
 it is decision context, not a settlement input or a Smart Money leaderboard. The standalone
-`/intelligence` page includes an explicitly synthetic, non-stakeable teaching example.
+`/intelligence` page includes a genuine historical market-32 capture (six successful Base queries,
+no returned relationships), separately from an explicitly synthetic, non-stakeable teaching example.
 
 Configure server-only `NANSEN_API_KEY` and `NANSEN_INTELLIGENCE_ENABLED=true` only after checking
 the Nansen account's credit allowance. Paid queries are explicit, Privy/Farcaster-authenticated,
 bounded and cached. Missing credentials do not trigger fixture substitution. Integration details,
-setup instructions, limits and the remaining live-evidence gate are in
+setup instructions, retained provider proof, limits and the remaining end-user demo gate are in
 [`evidence/nansen/README.md`](evidence/nansen/README.md).
 
 ## Verify

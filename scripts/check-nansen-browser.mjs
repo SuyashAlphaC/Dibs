@@ -1,0 +1,74 @@
+import assert from "node:assert/strict";
+import {spawn} from "node:child_process";
+import {mkdir, mkdtemp, writeFile} from "node:fs/promises";
+import {resolve} from "node:path";
+
+const base = process.argv[2] ?? "https://dibs-metropolis.vercel.app";
+const artifacts = resolve(".vercel/nansen-browser");
+await mkdir(artifacts, {recursive: true});
+const profile = await mkdtemp(resolve(artifacts, "profile-"));
+const chrome = spawn("google-chrome", ["--headless", "--no-sandbox", "--disable-gpu", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "about:blank"], {stdio: ["ignore", "ignore", "pipe"]});
+let socket;
+try {
+  const debuggingUrl = await new Promise((resolveUrl, reject) => {
+    const timer = setTimeout(() => reject(new Error("Chrome startup timed out")), 15000);
+    let output = "";
+    chrome.stderr.on("data", chunk => {
+      output += chunk.toString();
+      const match = output.match(/DevTools listening on (ws:\/\/[^\s]+)/);
+      if (match) {clearTimeout(timer); resolveUrl(match[1]);}
+    });
+    chrome.once("error", error => {clearTimeout(timer); reject(error);});
+  });
+  socket = new WebSocket(debuggingUrl);
+  await new Promise((resolveOpen, reject) => {socket.addEventListener("open", resolveOpen, {once: true}); socket.addEventListener("error", reject, {once: true});});
+  let id = 0;
+  const pending = new Map();
+  const errors = [];
+  socket.addEventListener("message", event => {
+    const message = JSON.parse(event.data);
+    if (message.method === "Runtime.exceptionThrown") errors.push(message.params.exceptionDetails.exception?.description ?? message.params.exceptionDetails.text);
+    if (process.env.NANSEN_BROWSER_DIAGNOSTICS === "true" && message.method === "Runtime.consoleAPICalled" && message.params.type === "error") console.error(message.params.args.map(arg => arg.value ?? arg.description).join(" "));
+    if (message.id) {const job = pending.get(message.id); if (job) {pending.delete(message.id); clearTimeout(job.timer); message.error ? job.reject(new Error(message.error.message)) : job.resolve(message.result);}}
+  });
+  const call = (method, params = {}, sessionId) => new Promise((resolveCall, reject) => {
+    const requestId = ++id;
+    const timer = setTimeout(() => {pending.delete(requestId); reject(new Error(`${method} timed out`));}, 30000);
+    pending.set(requestId, {resolve: resolveCall, reject, timer});
+    socket.send(JSON.stringify({id: requestId, method, params, ...(sessionId ? {sessionId} : {})}));
+  });
+  const {targetId} = await call("Target.createTarget", {url: "about:blank"});
+  const {sessionId} = await call("Target.attachToTarget", {targetId, flatten: true});
+  const page = (method, params) => call(method, params, sessionId);
+  await page("Runtime.enable"); await page("Page.enable");
+  const evaluate = async expression => {
+    const result = await page("Runtime.evaluate", {expression, returnByValue: true, awaitPromise: true});
+    if (result.exceptionDetails) throw new Error("Browser evaluation failed");
+    return result.result.value;
+  };
+  async function waitFor(expression) {
+    const deadline = Date.now() + 30000;
+    while (Date.now() < deadline) {if (await evaluate(expression)) return; await new Promise(resolveWait => setTimeout(resolveWait, 250));}
+    throw new Error("Expected Nansen UI did not become available");
+  }
+  const checks = [];
+  for (const [name, width, height] of [["desktop", 1366, 900], ["mobile", 390, 844]]) {
+    await page("Emulation.setDeviceMetricsOverride", {width, height, deviceScaleFactor: 1, mobile: name === "mobile"});
+    await page("Page.navigate", {url: `${base}/intelligence`});
+    await waitFor('document.querySelectorAll(".conviction-lens").length === 2 && document.body.innerText.includes("Recorded genuine API evidence")');
+    const result = await evaluate('({historical: document.body.innerText.includes("historical snapshot"), fixture: document.body.innerText.includes("synthetic wallets and relationships"), requests: document.querySelectorAll("#lens-title-32").length, overflow: document.documentElement.scrollWidth > innerWidth + 1, forms: document.querySelectorAll(".lens-toolbar").length, headings: document.querySelectorAll("h1").length})');
+    assert(result.historical && result.fixture); assert.equal(result.requests, 1); assert.equal(result.forms, 0); assert.equal(result.headings, 1); assert.equal(result.overflow, false);
+    await waitFor('document.querySelector(".lens-map svg").getBoundingClientRect().height > 200');
+    await evaluate('document.querySelector(".conviction-lens").scrollIntoView({block:"start"});');
+    const screenshot = await page("Page.captureScreenshot", {format: "png"});
+    await writeFile(resolve(artifacts, `${name}.png`), Buffer.from(screenshot.data, "base64"));
+    checks.push({viewport: name, ...result});
+  }
+  await page("Page.navigate", {url: `${base}/market/32`});
+  await waitFor('document.querySelector(".lens-toolbar") && document.body.innerText.includes("Sign in to inspect conviction")');
+  const boundaries = await evaluate('(async()=>{const url="/api/intelligence/market/32";const configResponse=await fetch(url);const config=await configResponse.json();const unauthenticated=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chain:"base"})});return{configurationStatus:configResponse.status,enabled:config.enabled,configured:config.configured,unauthenticatedStatus:unauthenticated.status}})()');
+  assert.equal(boundaries.configurationStatus, 200); assert(boundaries.enabled && boundaries.configured); assert.equal(boundaries.unauthenticatedStatus, 401); assert.deepEqual(errors, [], "Unexpected browser runtime errors");
+  const verification = {base, checkedAt: new Date().toISOString(), checks, boundaries, runtimeExceptions: errors, paidQueriesMade: 0, authenticatedUserFlowVerified: false};
+  await writeFile(resolve(artifacts, "verification.json"), JSON.stringify(verification, null, 2) + "\n");
+  console.log(JSON.stringify(verification));
+} finally {socket?.close(); chrome.kill("SIGTERM");}

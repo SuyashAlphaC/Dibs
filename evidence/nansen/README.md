@@ -2,9 +2,16 @@
 
 ## Submission status
 
-Implementation is prepared against commit `e931807`. **Deployment and genuine Nansen field proof
-are pending**: no Nansen API key was available during implementation. Unit tests use mocked HTTP
-responses; the public teaching fixture is synthetic. Neither is a live API claim.
+Genuine API field evidence was captured on 2026-10-07 for Elisa's market `32`.
+[`market-32-base-live.json`](market-32-base-live.json) joins six actual Envio backers and
+`0.075 MON` of scout conviction with six successful Nansen Base-context queries. Each query
+includes its actual request ID, source timestamp and one reported credit used. No relationship
+records were returned; the largest backer's share is `20.0%`. No independence claim follows.
+
+The judge-facing `/intelligence` page presents this **historical operator capture**, separately
+from its labelled synthetic teaching fixture. It makes no paid request on page load. Fresh scans
+remain on market pages behind Privy/Farcaster authorization. The operator capture is not proof
+of an authenticated end-user scan; that demo remains a submission handoff requirement.
 
 ## Meaningful product feature
 
@@ -45,7 +52,7 @@ See the [redistribution guide](https://docs.nansen.ai/guides/redistribution-guid
 1. Open the [Nansen API dashboard](https://app.nansen.ai/api), create an API key, and confirm that
    the account can call related-wallets with sufficient credits. Review current credit costs and
    usage limits in the dashboard; do not assume queries are free.
-2. Apply these changes to the current Dibs repository before deploying.
+2. Work only in `/home/suyashagrawal/Downloads/Dibs`, the canonical repository.
 3. In Vercel → Dibs project → Settings → Environment Variables, add **server-only**
    `NANSEN_API_KEY` to Production. Set `NANSEN_INTELLIGENCE_ENABLED=true` in Production.
    Never use `NEXT_PUBLIC_NANSEN_API_KEY` or put a real key in GitHub, screenshots or chat.
@@ -115,8 +122,8 @@ change rank, reputation, quality-growth scores, payouts, challenge decisions or 
 ## Live evidence acceptance gate
 
 - [ ] This implementation is deployed on the judge-facing app.
-- [ ] A genuine Nansen query succeeds for an actual indexed market backer.
-- [ ] Retain the downloaded report with `source: "nansen"`, selected chain, successful queries,
+- [x] A genuine Nansen query succeeds for an actual indexed market backer.
+- [x] Retain the derived report with `source: "nansen"`, selected chain, successful queries,
   actual request IDs where supplied, and source timestamps. A fixture export does not pass.
 - [ ] Record a short demo of the core pre-stake decision feature and coverage boundaries.
 - [ ] Show the public source and this integration guide to judges.
@@ -124,6 +131,34 @@ change rank, reputation, quality-growth scores, payouts, challenge decisions or 
 Do not mark Nansen verified merely because its key is configured. The existing `/evidence` ledger
 keeps configuration-only status pending/partial. Retained genuine field evidence must be evaluated
 separately; merely creating a download does not automatically upgrade that ledger.
+
+### Reproduce bounded operator field proof
+
+```sh
+cd /home/suyashagrawal/Downloads/Dibs
+npm run proof:nansen -- 32 base
+```
+
+This explicit command reads only real indexed backers, runs at most eight paid queries in batches
+of two, and refreshes the named sanitized artifact. It requires `.env` with the server-only key
+and enable switch. Each execution can spend credits; it is not a cron or an authorization bypass
+in the web app. Failures are not converted to successful empty scans. No raw provider labels or
+credentials are retained. Changing the recorded capture requires rechecking its fixture/proof
+regression test and redeploying before the public historical snapshot changes.
+
+## Bounty coverage assessment
+
+The screenshot's technical criteria are covered: a real Nansen API endpoint, a core pre-stake
+decision feature rather than a token-price/raw-response widget, a working web interface,
+public integration documentation, and retained genuine provider evidence. No language model,
+MCP integration or Nansen testnet coverage is claimed; the stated track accepts API integration.
+
+Competitive evidence is not complete: record a signed-in scout using a fresh scan on a market
+and explaining how it affects their decision (under two minutes). Current market-32 evidence
+contains zero returned relationships, so it proves the data join and uncertainty treatment, not
+real connected-backers detection. If genuine backers with external network activity participate,
+demonstrate actual returned relationship transactions; do not fabricate accounts or substitute
+the teaching fixture. No implementation can guarantee bounty eligibility or winning placement.
 
 ## Verification and implementation map
 
@@ -144,3 +179,5 @@ npm run test:nansen-route
   freshness, origins, input validation, label/secret isolation and explicit fixture boundaries.
 - `scripts/check-nansen-route.mjs`: real production-built GET/POST boundaries in disabled and
   configured states, with all network calls blocked and no real credentials involved.
+- `scripts/nansen-live-proof.ts`: explicitly invoked, bounded genuine provider field capture.
+- `lib/nansen-evidence.ts`: isolated retained historical evidence, not a live-scan fallback.

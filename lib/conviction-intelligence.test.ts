@@ -4,6 +4,7 @@ import {buildConvictionReport, normalizeBackers, parseRelatedWallets, type Convi
 import {createNansenClient, NansenError} from "./nansen-client";
 import {createScanLimiter, intelligenceSameOrigin, parseIntelligenceRequest} from "./intelligence-request";
 import {convictionFixture} from "./conviction-fixture";
+import {hasNansenFieldEvidence,nansenFieldReport} from "./nansen-evidence";
 
 const a = `0x${"1".repeat(40)}`, b = `0x${"2".repeat(40)}`, c = `0x${"3".repeat(40)}`, outside = `0x${"4".repeat(40)}`;
 const hash = `0x${"a".repeat(64)}`, time = "2026-10-07T12:00:00Z";
@@ -128,4 +129,20 @@ test("cached context ages remain explicit and a market without backers cannot cl
 test("earliest backer sampling respects exact event seconds, not rounded age display", () => {
   const result = normalizeBackers([{...positions[0], firstScoutedAt: 1009}, {...positions[1], firstScoutedAt: 1001}]);
   assert.equal(result[0].address, b);
+});
+
+test("retained field proof is genuine, attributable historical context, never substituted fixture data", () => {
+  assert(hasNansenFieldEvidence);
+  assert.equal(nansenFieldReport.source, "nansen");
+  assert.equal(nansenFieldReport.marketId, "32");
+  assert.equal(nansenFieldReport.chain, "base");
+  assert.equal(nansenFieldReport.coverage.total, 6);
+  assert.equal(nansenFieldReport.coverage.succeeded, 6);
+  assert.equal(nansenFieldReport.totalConvictionWei, "75000000000000000");
+  assert.equal(nansenFieldReport.largestShareBps, 2000);
+  assert.equal(nansenFieldReport.coverage.withRecords, 0);
+  assert.equal(nansenFieldReport.links.length, 0);
+  assert(nansenFieldReport.queries.every(query => query.requestId && query.fetchedAt));
+  assert(!JSON.stringify(nansenFieldReport).includes("address_label"));
+  assert.match(nansenFieldReport.findings.join(" "), /does not establish independent ownership/);
 });

@@ -1,6 +1,7 @@
 # Local verification — 2026-10-07
 
-These are implementation checks, **not live Nansen field proof**.
+The first implementation checks were not live field proof. The activation checks below now
+include a genuine provider capture; authenticated end-user proof remains separate.
 
 - Application tests: 41 passed, including 13 new Conviction Lens tests.
 - TypeScript: `npm run typecheck` passed.
@@ -17,7 +18,29 @@ The initial build with an external dependency symlink hit Turbopack's filesystem
 Using a local copy of the already installed dependencies resolved that environment-only issue;
 no application configuration or package versions were changed to work around it.
 
-This execution environment blocks localhost browser connections and Chrome startup. Visual
-browser/responsive verification remains pending despite the successful production build and
-markup checks. No Nansen API key was available, so live upstream verification and a judge-facing
-deployment remain pending too. See [the setup and field-proof checklist](README.md).
+The initial restricted execution environment blocked Chrome and localhost connections and had
+no Nansen key. Those initial limitations were removed for the following activation work.
+
+## Activation verification — 2026-10-07
+
+- Corrected the ignored local `.env` indexer URL: the old endpoint returned HTTP 404; the user's
+  newer Envio endpoint returned genuine market data. No production indexer setting was changed.
+- Added `NANSEN_API_KEY` as a sensitive production-only Vercel variable, and explicit enablement.
+  The key was passed through stdin, never committed, printed, or included in command arguments.
+- Genuine operator capture for market 32: six actual backers, `0.075 MON` of scout conviction,
+  six successful Nansen Base queries, six source request IDs and six reported credits used.
+  No relationship records were returned. A separate first-wallet Monad check also succeeded
+  without relationship records. No independent-ownership conclusion is claimed.
+- Public `/intelligence` shows that retained historical capture separately from the synthetic
+  example. It requires no login and makes no paid request. Fresh market scans still require
+  verified Privy/Farcaster authorization; the operator proof is not an authenticated UI proof.
+- Desktop (1366×900) and mobile (390×844) Chrome checks reproduced and then verified fixes for
+  multi-node SVG `<title>` hydration and the global 20px SVG height inherited by the map.
+  After fixes: no runtime exceptions, no horizontal overflow, one H1, both disclosure labels,
+  visible full-size map, enabled configuration GET, and unauthenticated POST rejected with 401.
+- 42 application tests pass, including an additional retained-field-proof regression.
+- Client-bundle secret scan checked 199 JavaScript files: no Nansen key appeared. The captured
+  JSON and generated public HTML also passed the same secret-exposure check.
+
+Production deployment and post-deployment checks are recorded below once complete. See the
+[setup, proof artifact and remaining demo checklist](README.md).

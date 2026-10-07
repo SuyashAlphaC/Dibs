@@ -10,6 +10,7 @@
     "test:nansen-route": "npm run build && node scripts/check-nansen-route.mjs && node scripts/check-nansen-route.mjs --configured",
     "typecheck": "tsc --noEmit",
     "proof:stake": "tsx scripts/live-stake-proof.ts",
+    "proof:nansen": "node --env-file=.env --import tsx scripts/nansen-live-proof.ts",
     "keeper:qstash": "bash scripts/qstash-market-keeper.sh",
     "cre:broadcast": "bash scripts/broadcast-cre-settlement.sh",
     "contracts:test": "forge test --root contracts"

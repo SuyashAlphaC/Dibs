@@ -55,7 +55,7 @@ flowchart LR
 | Privy | Email/passkey/Farcaster authentication, automatic embedded wallets, Farcaster account linking, server-verified nominations, user-confirmed Monad transactions and embedded-wallet gas sponsorship | Live identity-to-action proof at `/privy`, production health status, and wallet transaction path |
 | Farcaster | Source of eligible casts and Mini App distribution | Valid signed account association and live Mini App manifest |
 | Chainlink CRE | Scheduled DON execution, deterministic quality scoring, challenge re-observation and authenticated Monad report delivery | Active private-registry workflow plus confirmed DON writes and events recorded in `evidence/live-don-settlement` |
-| Nansen API | Conviction Lens combines indexed scout stakes with related-wallet evidence to make concentration and observed connections actionable before staking | Implementation and labelled teaching example at `/intelligence`; deployment, API access and retained genuine scan evidence are still required. See `evidence/nansen` |
+| Nansen API | Conviction Lens combines indexed scout stakes with related-wallet evidence to make concentration and observed connections actionable before staking | Six actual market-32 backers queried on Base, genuine request IDs/timestamps retained in `evidence/nansen/market-32-base-live.json`; read-only historical capture and separate teaching fixture at `/intelligence`. Fresh authenticated user demo remains to be recorded. |
 
 ### Nansen bounty boundary
 
@@ -64,9 +64,11 @@ widget. It joins Nansen's related-wallet endpoint with Envio's actual backer add
 stake amounts, renders a relationship map, explains stake concentration and provides transaction
 links, per-query coverage, source timestamps and downloadable derived evidence.
 
-This code does **not** yet establish a live Nansen integration on the deployed app. A server-only
-API key, explicit enablement, deployment and one retained genuine successful market scan are
-required before claiming that gate. The `/intelligence` fixture is permanently labelled synthetic.
+The operator-captured field report for market `32` contains six successful genuine Nansen queries,
+six request IDs, timestamps, and six reported credits used. No relationship records were returned;
+the product explains this coverage limit rather than inferring independent ownership. This capture
+is historical, not an authenticated end-user scan. Record the fresh signed-in UI demo to complete
+that submission proof. The separate `/intelligence` teaching fixture stays labelled synthetic.
 No Nansen label or Smart Money dataset is redistributed. External wallet context cannot change
 conviction rank, scout reputation, CRE quality scores or payouts.
 
