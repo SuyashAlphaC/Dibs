@@ -1,6 +1,7 @@
 import type {CastMarket, LiveScoutSignal, MarketStatus, ScoutIdentity} from "@/lib/types";
 import {resolveFarcasterIdentities,toNeynarCastHash} from "@/lib/farcaster";
 import {decodeQualityBaseline} from "@/lib/quality-baseline";
+import type {ConvictionBacker} from "@/lib/conviction-intelligence";
 
 type IndexedMarket = {
   id: string;
@@ -386,6 +387,21 @@ export async function getMarketPositions(marketId: string): Promise<MarketScoutP
     leadMinutes:Math.max(0,Math.floor((Number(position.firstScoutedAt)-openedAt)/60)),
     identity:identities.get(position.scout.toLowerCase())!,
   }));
+}
+
+/** Raw indexed conviction for Nansen joins; never use rounded MON or client-supplied wallets. */
+export async function getMarketConviction(marketId: string): Promise<{exists: boolean; positions: ConvictionBacker[]} | null> {
+  const data = await queryEnvio<{Position: IndexedMarketPosition[]; Market: Array<{id: string; openedAt: string}>}>(
+    `query MarketConvictionContext($marketId: String!) {
+      Position(where: {marketId: {_eq: $marketId}}, order_by: [{firstScoutedAt: asc}, {scout: asc}]) {
+        scout spent units firstScoutedAt
+      }
+      Market(where: {id: {_eq: $marketId}}, limit: 1) { id openedAt }
+    }`, {marketId},
+  );
+  if (!data) return null;
+  const openedAt = Number(data.Market[0]?.openedAt ?? 0);
+  return {exists: Boolean(data.Market[0]), positions: data.Position.map(position => ({address: position.scout, spentWei: position.spent, units: Number(position.units), firstScoutedAt: Number(position.firstScoutedAt), leadMinutes: Math.max(0, Math.floor((Number(position.firstScoutedAt) - openedAt) / 60))}))};
 }
 
 

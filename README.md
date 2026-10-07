@@ -11,6 +11,7 @@ Hackathon judges: see the [submission guide](./SUBMISSION.md) and the live [/evi
 - Privy-sponsored gas for embedded-wallet transactions, with the MON conviction amount kept explicit and user-approved.
 - Neynar-backed early-cast API with explicit live, unavailable, empty, and labelled preview states.
 - Persistent Privy wallet-to-Farcaster identity resolution for scout cards and ledgers.
+- Nansen Conviction Lens joins indexed scout stakes with permitted related-wallet evidence to explain concentration and observed backer connections before staking. Live access requires a Nansen API key; fixtures are isolated and labelled.
 - Native-MON Solidity contract with bounded epochs, linear conviction curves, sponsor funding, permissioned market opening, oracle results, evidence hashes, bonded challenges, per-market payout caps, creator rewards, and pull-based claims.
 - Envio indexer for epochs, markets, positions, timeouts, allocations, settlements, and scout reputation; the feed polls indexed stake totals for live ranking.
 - Chainlink CRE workflow for observation consensus, deterministic quality scoring, evidence hashing, Monad settlement reports, and secondary challenge review.
@@ -83,6 +84,19 @@ their own gas. Sponsorship never hides or subsidizes the MON conviction amount b
 
 The reproducible judge flow and implementation map are recorded in
 [`evidence/privy/README.md`](evidence/privy/README.md).
+
+## Nansen conviction intelligence
+
+Market pages expose a **Conviction Lens** and feed cards link directly to it. The feature combines
+exact Envio scout stakes with Nansen's `POST /api/v1/profiler/address/related-wallets` endpoint;
+it is decision context, not a settlement input or a Smart Money leaderboard. The standalone
+`/intelligence` page includes an explicitly synthetic, non-stakeable teaching example.
+
+Configure server-only `NANSEN_API_KEY` and `NANSEN_INTELLIGENCE_ENABLED=true` only after checking
+the Nansen account's credit allowance. Paid queries are explicit, Privy/Farcaster-authenticated,
+bounded and cached. Missing credentials do not trigger fixture substitution. Integration details,
+setup instructions, limits and the remaining live-evidence gate are in
+[`evidence/nansen/README.md`](evidence/nansen/README.md).
 
 ## Verify
 

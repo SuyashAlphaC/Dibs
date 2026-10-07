@@ -29,6 +29,7 @@ export function CastMarketCard({market,onDibs,justDibsed=false}: {market:CastMar
       <p className="seed-disclosure">Community seed {market.communitySeed.toFixed(3)} MON · excluded from rank</p>
     </div>
     <div className="card-action">
+      {/^[1-9]\d*$/.test(market.id)&&<Link className="lens-discover-link" href={`/market/${market.id}#conviction-lens`}>Inspect who backs this · Nansen ↗</Link>}
       <button disabled={disabled||market.userHasDibs} onClick={()=>onDibs(market)}>{market.userHasDibs?"Position confirmed":disabled?market.status:`Back this signal · ${market.nextUnitCost.toFixed(3)} MON`}</button>
       <div className="action-context"><span>Enter as scout #{entryPosition} · est. {projectedScoutShare.toFixed(projectedScoutShare<10?1:0)}% scout share</span><Link href={`/market/${market.id}`}>Open market <span>→</span></Link></div>
     </div>

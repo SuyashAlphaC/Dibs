@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test": "node --import tsx --test lib/*.test.ts",
+    "test:nansen-route": "npm run build && node scripts/check-nansen-route.mjs && node scripts/check-nansen-route.mjs --configured",
     "typecheck": "tsc --noEmit",
     "proof:stake": "tsx scripts/live-stake-proof.ts",
     "keeper:qstash": "bash scripts/qstash-market-keeper.sh",
