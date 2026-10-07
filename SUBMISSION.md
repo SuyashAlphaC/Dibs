@@ -7,10 +7,14 @@
 - App and Farcaster Mini App: https://dibs-metropolis.vercel.app/discover
 - Monad testnet contract: `0x0fFd42613e0Bd0f328C23DeCB7c33f81B2490F84`
 - CRE receiver: `0x78B87B938cbdd9453F2dA6adA043d74d792C9A81`
-- Public CRE simulation fixture: https://dibs-metropolis.vercel.app/api/oracle/simulation-fixture
-- Judge-facing simulation console: https://dibs-metropolis.vercel.app/simulation
+- CRE forwarder: `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`
+- Active CRE workflow: `dibs-settlement-testnet`
+- Workflow ID: `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`
+- Judge-facing CRE console: https://dibs-metropolis.vercel.app/simulation
 - Live acceptance ledger: https://dibs-metropolis.vercel.app/evidence
 - Public integration health: https://dibs-metropolis.vercel.app/api/health
+- Verified DON settlement (market 32): `0x8d0fa1b3d862e896c8fe161b22928a64089ae96adb8281fde03fd588306b5fd4`
+- Verified positive DON settlement (market 33): `0xeee2341f26b475d0c1f44a69625d4f6b640326b357313ca132e85aa7cece887a`
 
 ## What judges should test
 
@@ -19,7 +23,8 @@
 3. Call Dibs, approve the Monad transaction, and watch conviction and rank update.
 4. Open the market and inspect the Envio-indexed early-scout ledger.
 5. Open the scout address to see its public, shareable reputation record.
-6. Open **Activity → CRE simulation** to inspect the explicitly labeled quality-settlement proof.
+6. Open **Activity → Chainlink DON** to inspect the active workflow, authenticated receiver, and production settlement boundary.
+7. Open **Live evidence** and inspect the two Monad transactions emitted through the official Keystone Forwarder.
 
 The main feed excludes the initial seven-day rehearsal market. Judge-facing discovery contains
 only final-format windows no longer than 24 hours, while legacy history remains available by
@@ -49,17 +54,27 @@ flowchart LR
 | Envio | Live ranking, positions, activity, settlement and reputation data | Production `/api/casts`, scout ledger and GraphQL-backed profiles |
 | Privy | Wallet authentication, embedded wallet support and Farcaster account linking | Production connect and profile-link flows |
 | Farcaster | Source of eligible casts and Mini App distribution | Valid signed account association and live Mini App manifest |
-| Chainlink CRE | Deterministic quality scoring, challenge re-observation and Monad report execution | Labelled fixture proof in `oracle/SIMULATION_EVIDENCE.md` plus confirmed simulation-broadcast evidence in `evidence/live-market-12` |
+| Chainlink CRE | Scheduled DON execution, deterministic quality scoring, challenge re-observation and authenticated Monad report delivery | Active private-registry workflow plus confirmed DON writes and events recorded in `evidence/live-don-settlement` |
 
 ## Integrity boundary
 
-Dibs has two explicitly separated CRE evidence paths. The fixture path is a dry-run simulation
-used to reproduce quality filtering and challenge correction. The production-data path consumed
-real Neynar observations for markets 12–14 and used `cre workflow simulate --broadcast` through
-an isolated simulation receiver to produce confirmed Monad testnet writes. This is not represented
-as a Chainlink DON deployment; DON access remains pending. Contract-side forwarding, allocation,
-challenge and claim behavior are independently covered by Foundry tests, while `/evidence` keeps
-missing field proofs visibly pending until genuine users create them.
+Dibs settlement is deployed on the Chainlink DON. The active private-registry workflow
+`dibs-settlement-testnet` runs every fifteen minutes, reaches consensus over production
+observations, and sends reports through the official Monad testnet Keystone Forwarder. The
+receiver accepts that forwarder, requires the pinned workflow ID, binds reports to chain `10143`
+and the deployed Dibs contract, and forwards only `submitResult` or `resolveChallenge` calls.
+
+The live path is proven by two successful Forwarder transactions. Market 32 recorded a zero-growth
+result at block `68455332`; market 33 recorded a positive quality-growth score of `6685` at block
+`68455340`. Both transactions emitted `SettlementReportForwarded` from the receiver and
+`ResultSubmitted` from Dibs. The workflow registry reports `ACTIVE`, and its latest observed run on
+2026-10-07 completed with status `SUCCESS`.
+
+The older fixture and `simulate --broadcast` artifacts remain checked in as explicitly historical
+reproduction evidence. They are not the production settlement claim. The observation API currently
+aggregates Neynar data before CRE consensus; this external-data trust boundary is disclosed rather
+than presented as direct node-to-Neynar access. `/evidence` also keeps unrelated field proofs—such
+as a live upheld challenge and non-zero scout reward claim—pending until genuine users create them.
 
 New markets store a versioned quality-weighted opening baseline. Legacy markets remain readable and use the documented raw-interaction compatibility path.
 
@@ -79,6 +94,6 @@ cd ../oracle && npm test && npm run typecheck
 - 0:00–0:20 — Why popularity feeds miss early cultural signal.
 - 0:20–1:00 — Live Farcaster market, Privy wallet and Dibs confirmation.
 - 1:00–1:25 — Conviction and rank move; Envio position appears.
-- 1:25–2:05 — CRE simulation rejects weak identities and produces weighted growth.
-- 2:05–2:35 — Contract-tested settlement, reward claim and public scout reputation.
-- 2:35–2:50 — Architecture and explicit production/simulation boundary.
+- 1:25–2:05 — Active CRE DON workflow scores observations and authenticates a Monad report.
+- 2:05–2:35 — Inspect `ResultSubmitted`, `SettlementReportForwarded`, Envio indexing and scout reputation.
+- 2:35–2:50 — Architecture, production trust boundary, and honestly labelled pending field proofs.

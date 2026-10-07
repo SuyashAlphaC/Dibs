@@ -1,0 +1,26 @@
+{
+  "chainId": 10143,
+  "forwarder": "0xF8344CFd5c43616a4366C34E3EEE75af79a74482",
+  "receiver": "0x78B87B938cbdd9453F2dA6adA043d74d792C9A81",
+  "dibs": "0x0fFd42613e0Bd0f328C23DeCB7c33f81B2490F84",
+  "workflowId": "0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552",
+  "settlements": [
+    {
+      "marketId": 32,
+      "qualityGrowthScore": 0,
+      "transactionHash": "0x8d0fa1b3d862e896c8fe161b22928a64089ae96adb8281fde03fd588306b5fd4",
+      "blockNumber": 68455332,
+      "status": "success",
+      "events": ["ResultSubmitted", "SettlementReportForwarded"]
+    },
+    {
+      "marketId": 33,
+      "qualityGrowthScore": 6685,
+      "evidenceHash": "0x41cf811e176df841e67522a66bd5a8cfef28301340bb43006f8a966f96f811dc",
+      "transactionHash": "0xeee2341f26b475d0c1f44a69625d4f6b640326b357313ca132e85aa7cece887a",
+      "blockNumber": 68455340,
+      "status": "success",
+      "events": ["ResultSubmitted", "SettlementReportForwarded"]
+    }
+  ]
+}

@@ -1,7 +1,9 @@
 # Chainlink CRE simulation evidence
 
-This is the reproducible CRE proof used by the Dibs hackathon submission. It is intentionally a
-simulation, not a claim that a production workflow report was broadcast.
+This is the historical reproducible fixture proof created before DON deployment access was
+granted. It remains useful for reproducing quality filtering and challenge correction, but it is
+not the submission's production-execution evidence. The verified live DON record is in
+[`evidence/live-don-settlement`](../evidence/live-don-settlement/README.md).
 
 ## Command
 
@@ -46,8 +48,9 @@ market=3 action=resolve score=3800 upheld=true accepted=3 rejected=2 report=prep
 - `config.simulation.json` sets `dryRun: true`, so the report is prepared but not submitted.
 - The deterministic fixture is served from `/api/oracle/simulation-fixture`, returns
   `simulation: true`, and is never used by `config.testnet.json`.
-- The production receiver remains pinned to its fail-closed sentinel workflow ID while Chainlink
-  deployment access is pending.
+- At the time of this run, the receiver used its fail-closed pre-deployment configuration. It is
+  now pinned to active workflow ID
+  `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`.
 - Contract-side receiver forwarding is covered separately by seven Foundry tests, including
   wrong-forwarder, wrong-chain, wrong-workflow, and function-allowlist rejection cases.
 

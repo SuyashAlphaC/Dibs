@@ -47,8 +47,9 @@ received the configured `0.002 MON` community seed.
 | 3 | `0xaff95fb8cc8dd1b979e2b58f523185c353e0b059` | `0x74b8ffc860cd618b3c13264f551d3f272751affde4d431b45590f8e2a0ae4fda` |
 | 4 | `0x58cea065a5346d576d69f3a6577eedd3b2bfe0e1` | `0x5170e286c199baaed275333033ed7b048e1ce594958b126632fcc3e98f9f7c08` |
 
-The production market keeper runs every ten minutes through GitHub Actions and advances oracle
+The production market keeper runs every five minutes through Upstash QStash and advances oracle
 timeouts, challenge timeouts, and epoch finalization in addition to opening eligible markets.
+GitHub Actions is retained only as an operator-triggered recovery path.
 
 ## CRE safety state
 
@@ -59,22 +60,37 @@ The receiver is pinned to the active DON workflow:
 - Pin transaction: `0x634670a6e3f863121e8ab254f7f8a1327fa575bddd86c02b71655ef5ad82cae1`
 - CRE registry status: `ACTIVE`
 
-### Workflow readiness — 2026-09-27
+### Live DON deployment — 2026-10-05
 
 - CRE account: authenticated to organization `org_5KhPGUSaC3kQiPUM`.
 - Monad testnet is supported by CRE and resolves to Keystone Forwarder
   `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`, matching the receiver.
+- Workflow: `dibs-settlement-testnet`.
+- Workflow ID: `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`.
+- Registry: private; status: `ACTIVE`.
+- Registered: `2026-10-05T03:07:55Z`; deployed: `2026-10-05T03:07:56Z`.
+- Verified on 2026-10-07: latest execution status `SUCCESS` with no workflow errors.
 - Scoring tests: 3/3 passing.
 - TypeScript: passing.
-- Workflow simulation: passing with result `0` while no market is awaiting a result.
-- Compiled binary hash: `b74267d0de96a54f0fa599781c38d5cb9c374e955b82f2da12857c1249ae50e5`.
-- Config hash: `df0fba1c906b5d7633840818a9fdeb93d2c263611ecacec60bbf2188b4babb91`.
 - Production deployment access: enabled through `cre account access`.
 
-### Hackathon simulation evidence — 2026-09-27
+### Verified DON settlements — 2026-10-05
 
-The submission uses CRE simulation while production deploy access is pending. The checked-in
-`simulation-settings` target completed successfully against the explicitly labeled public fixture:
+| Market | Score | Block | Forwarder transaction |
+|---:|---:|---:|---|
+| 32 | `0` | `68455332` | `0x8d0fa1b3d862e896c8fe161b22928a64089ae96adb8281fde03fd588306b5fd4` |
+| 33 | `6685` | `68455340` | `0xeee2341f26b475d0c1f44a69625d4f6b640326b357313ca132e85aa7cece887a` |
+
+Both transactions succeeded with the official Keystone Forwarder as their destination and emitted
+`SettlementReportForwarded` from `DibsSettlementReceiver` plus `ResultSubmitted` from `Dibs`.
+Market 33 committed evidence hash
+`0x41cf811e176df841e67522a66bd5a8cfef28301340bb43006f8a966f96f811dc`.
+See [`evidence/live-don-settlement`](../evidence/live-don-settlement/README.md).
+
+### Historical simulation evidence — 2026-09-27
+
+Before deployment access was granted, the checked-in `simulation-settings` target completed
+successfully against the explicitly labelled public fixture:
 
 - Result: `2` observations processed.
 - Markets: `2` normal submission and `3` challenged re-observation.
@@ -86,9 +102,8 @@ The submission uses CRE simulation while production deploy access is pending. Th
 - Config hash: `1d9db45337742e3528773ca39f4a50cf436b40e999bb7a9998d8c2ec6d35c5e5`.
 - Evidence: [`oracle/SIMULATION_EVIDENCE.md`](../oracle/SIMULATION_EVIDENCE.md).
 
-Do not replace the temporary expected workflow ID until `cre workflow deploy` succeeds and returns
-the registered workflow ID. Keeping the sentinel value makes the receiver fail closed during the
-approval wait.
+This section is retained as historical reproduction evidence. It is not the production execution
+claim; the active DON deployment and Forwarder transactions above supersede it.
 
 ## Live stake → Envio proof — 2026-09-28
 

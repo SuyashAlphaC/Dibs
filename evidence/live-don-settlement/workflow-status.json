@@ -1,0 +1,19 @@
+{
+  "capturedAt": "2026-10-07T15:00:11Z",
+  "workflow": {
+    "name": "dibs-settlement-testnet",
+    "workflowId": "0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552",
+    "registry": "private",
+    "status": "ACTIVE",
+    "registeredAt": "2026-10-05T03:07:55Z",
+    "deployedAt": "2026-10-05T03:07:56Z"
+  },
+  "lastExecution": {
+    "uuid": "20cde7ae-3fe1-4ea1-a7a8-93b70df04b8b",
+    "startedAt": "2026-10-07T15:00:02Z",
+    "finishedAt": "2026-10-07T15:00:10Z",
+    "status": "SUCCESS",
+    "errors": []
+  },
+  "command": "cre workflow get . --target staging-settings --json"
+}
