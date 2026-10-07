@@ -121,12 +121,17 @@ change rank, reputation, quality-growth scores, payouts, challenge decisions or 
 
 ## Live evidence acceptance gate
 
-- [ ] This implementation is deployed on the judge-facing app.
+- [x] This implementation is deployed on the judge-facing app: [Conviction Lens](https://dibs-metropolis.vercel.app/intelligence).
 - [x] A genuine Nansen query succeeds for an actual indexed market backer.
 - [x] Retain the derived report with `source: "nansen"`, selected chain, successful queries,
   actual request IDs where supplied, and source timestamps. A fixture export does not pass.
 - [ ] Record a short demo of the core pre-stake decision feature and coverage boundaries.
 - [ ] Show the public source and this integration guide to judges.
+
+Production browser/boundary checks are retained in
+[`production-browser-verification.json`](production-browser-verification.json).
+[Desktop](desktop.png) and [mobile](mobile.png) screenshots show the genuine captured report.
+These checks make no paid query and do not claim to verify a signed-in user scan.
 
 Do not mark Nansen verified merely because its key is configured. The existing `/evidence` ledger
 keeps configuration-only status pending/partial. Retained genuine field evidence must be evaluated

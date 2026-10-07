@@ -1,0 +1,33 @@
+{
+  "base": "https://dibs-metropolis.vercel.app",
+  "checkedAt": "2026-10-07T17:25:36.749Z",
+  "checks": [
+    {
+      "viewport": "desktop",
+      "historical": true,
+      "fixture": true,
+      "requests": 1,
+      "overflow": false,
+      "forms": 0,
+      "headings": 1
+    },
+    {
+      "viewport": "mobile",
+      "historical": true,
+      "fixture": true,
+      "requests": 1,
+      "overflow": false,
+      "forms": 0,
+      "headings": 1
+    }
+  ],
+  "boundaries": {
+    "configurationStatus": 200,
+    "enabled": true,
+    "configured": true,
+    "unauthenticatedStatus": 401
+  },
+  "runtimeExceptions": [],
+  "paidQueriesMade": 0,
+  "authenticatedUserFlowVerified": false
+}

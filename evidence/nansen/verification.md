@@ -42,5 +42,22 @@ no Nansen key. Those initial limitations were removed for the following activati
 - Client-bundle secret scan checked 199 JavaScript files: no Nansen key appeared. The captured
   JSON and generated public HTML also passed the same secret-exposure check.
 
-Production deployment and post-deployment checks are recorded below once complete. See the
+## Production verification
+
+Feature commit: `7b7bc88`. Vercel deployment: `91khcTvEXRTqqaK9JgtMMtNJmCDm`.
+Deployment URL: https://dibs-metropolis-1w19eqa9c-suyashagrawal862-5919s-projects.vercel.app
+Production alias: https://dibs-metropolis.vercel.app
+
+- `/intelligence`, `/market/32`, `/api/intelligence/market/32` and `/api/health`: HTTP 200.
+- Production Nansen configuration: enabled and configured, at most eight wallets, 900-second cache.
+- `/api/health`: healthy, Envio ready, CRE receiver still in pinned DON mode.
+- Cross-site scan POST: HTTP 403. Unauthenticated same-origin browser POST: HTTP 401.
+- Desktop and mobile checks passed at `2026-10-07T17:25:36.749Z`, with zero runtime exceptions,
+  no horizontal overflow, a full-size map and separate historical/synthetic disclosures.
+- Public responses passed the real-key redaction check. Browser smoke checks made zero paid calls.
+- [Machine-readable production browser proof](production-browser-verification.json),
+  [desktop screenshot](desktop.png), [mobile screenshot](mobile.png).
+
+The live provider capture was made through the explicit operator CLI, not a signed-in browser.
+No complete authenticated user scan or demo video is claimed. See the
 [setup, proof artifact and remaining demo checklist](README.md).
