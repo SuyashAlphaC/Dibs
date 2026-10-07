@@ -4,7 +4,8 @@ import {mkdir, mkdtemp, writeFile} from "node:fs/promises";
 import {resolve} from "node:path";
 
 const base = process.argv[2] ?? "https://dibs-metropolis.vercel.app";
-const artifacts = resolve(".vercel/nansen-browser");
+const modalMode = process.argv.includes("--modals");
+const artifacts = resolve(modalMode ? ".vercel/auth-modal-browser" : ".vercel/nansen-browser");
 await mkdir(artifacts, {recursive: true});
 const profile = await mkdtemp(resolve(artifacts, "profile-"));
 const chrome = spawn("google-chrome", ["--headless", "--no-sandbox", "--disable-gpu", "--remote-debugging-port=0", `--user-data-dir=${profile}`, "about:blank"], {stdio: ["ignore", "ignore", "pipe"]});
@@ -51,6 +52,41 @@ try {
     while (Date.now() < deadline) {if (await evaluate(expression)) return; await new Promise(resolveWait => setTimeout(resolveWait, 250));}
     throw new Error("Expected Nansen UI did not become available");
   }
+  if (modalMode) {
+    const checks = [];
+    const geometry = '(()=>{const element=document.querySelector("#privy-modal-content");const r=element.getBoundingClientRect();return{bodyZoom:getComputedStyle(document.body).zoom,appZoom:getComputedStyle(document.querySelector(".app-frame")).zoom,viewport:{width:innerWidth,height:innerHeight},modal:{x:r.x,y:r.y,width:r.width,height:r.height},offset:{x:r.x+r.width/2-innerWidth/2,y:r.y+r.height/2-innerHeight/2},overflow:document.documentElement.scrollWidth>innerWidth+1,insideDashboard:Boolean(element.closest(".app-frame"))}})()';
+    for (const [name, width, height] of [["wide", 2048, 1242], ["desktop", 1920, 1080], ["laptop", 1366, 900], ["mobile", 390, 844]]) {
+      await page("Emulation.setDeviceMetricsOverride", {width, height, deviceScaleFactor: 1, mobile: name === "mobile"});
+      await page("Page.navigate", {url: `${base}/market/32`});
+      await waitFor('document.querySelector(".connect-button")?.disabled === false');
+      await evaluate('document.querySelector(".connect-button").click()');
+      await waitFor('document.querySelector("#privy-modal-content")?.getBoundingClientRect().height > 50');
+      await evaluate('new Promise(resolve=>setTimeout(resolve,600))');
+      const login = await evaluate(geometry);
+      assert.equal(Number(login.bodyZoom), 1);
+      assert.equal(Number(login.appZoom), width >= 1600 ? 1.5 : 1);
+      assert.equal(login.insideDashboard, false);
+      assert.equal(login.overflow, false);
+      assert(Math.abs(login.offset.x) < 2, `${name}: Privy sign-in must be horizontally centered`);
+      if (width > 440) assert(Math.abs(login.offset.y) < 2, `${name}: Privy sign-in must be vertically centered`);
+      assert(login.modal.y >= -1 && login.modal.y + login.modal.height <= height + 1, `${name}: modal must fit the viewport`);
+      let farcaster = null;
+      if (width > 440) {
+        const opened = await evaluate('(()=>{const button=[...document.querySelectorAll("#privy-modal-content button")].find(button=>/farcaster/i.test(button.textContent||button.getAttribute("aria-label")||""));if(!button)return false;button.click();return true})()');
+        assert(opened, "Farcaster sign-in option must be present");
+        await waitFor('/Sign in with Farcaster/i.test(document.querySelector("#privy-modal-content")?.textContent||"")');
+        await evaluate('new Promise(resolve=>setTimeout(resolve,600))');
+        farcaster = await evaluate(geometry);
+        assert(Math.abs(farcaster.offset.x) < 2 && Math.abs(farcaster.offset.y) < 2, `${name}: Farcaster modal must be centered`);
+        assert(farcaster.modal.y >= -1 && farcaster.modal.y + farcaster.modal.height <= height + 1);
+      }
+      checks.push({viewport: name, login, farcaster});
+    }
+    assert.deepEqual(errors, [], "Unexpected browser runtime errors");
+    const verification = {base, checkedAt: new Date().toISOString(), checks, runtimeExceptions: errors, authenticated: false, transactionsSent: 0};
+    await writeFile(resolve(artifacts, "verification.json"), JSON.stringify(verification, null, 2) + "\n");
+    console.log(JSON.stringify(verification));
+  } else {
   const checks = [];
   for (const [name, width, height] of [["desktop", 1366, 900], ["mobile", 390, 844]]) {
     await page("Emulation.setDeviceMetricsOverride", {width, height, deviceScaleFactor: 1, mobile: name === "mobile"});
@@ -73,4 +109,5 @@ try {
   const verification = {base, checkedAt: new Date().toISOString(), checks, boundaries, runtimeExceptions: errors, paidQueriesMade: 0, authenticatedUserFlowVerified: false};
   await writeFile(resolve(artifacts, "verification.json"), JSON.stringify(verification, null, 2) + "\n");
   console.log(JSON.stringify(verification));
+  }
 } finally {socket?.close(); chrome.kill("SIGTERM");}
