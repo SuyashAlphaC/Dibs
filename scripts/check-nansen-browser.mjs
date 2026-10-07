@@ -67,6 +67,7 @@ try {
   }
   await page("Page.navigate", {url: `${base}/market/32`});
   await waitFor('document.querySelector(".lens-toolbar") && document.body.innerText.includes("Sign in to inspect conviction")');
+  await waitFor('document.querySelector(".lens-toolbar button")?.disabled === false');
   const boundaries = await evaluate('(async()=>{const url="/api/intelligence/market/32";const configResponse=await fetch(url);const config=await configResponse.json();const unauthenticated=await fetch(url,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chain:"base"})});return{configurationStatus:configResponse.status,enabled:config.enabled,configured:config.configured,unauthenticatedStatus:unauthenticated.status}})()');
   assert.equal(boundaries.configurationStatus, 200); assert(boundaries.enabled && boundaries.configured); assert.equal(boundaries.unauthenticatedStatus, 401); assert.deepEqual(errors, [], "Unexpected browser runtime errors");
   const verification = {base, checkedAt: new Date().toISOString(), checks, boundaries, runtimeExceptions: errors, paidQueriesMade: 0, authenticatedUserFlowVerified: false};
