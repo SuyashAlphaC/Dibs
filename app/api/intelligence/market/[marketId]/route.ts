@@ -30,15 +30,17 @@ export async function POST(request: Request, {params}: {params: Promise<{marketI
   const parsed = parseIntelligenceRequest((await params).marketId, body);
   if (!parsed) return NextResponse.json({error: "Choose an indexed market and Monad, Base or Ethereum context"}, {status: 400, headers});
   const retry = limit(user.userId);
-  if (retry) return NextResponse.json({error: `Wait ${retry} seconds before another scan`}, {status: 429, headers: {...headers, "retry-after": String(retry)}});
+  if (retry) return NextResponse.json({error: `Wait ${retry} seconds before another scan`, retryAfterSeconds: retry}, {status: 429, headers: {...headers, "retry-after": String(retry)}});
+  const retryAt = Date.now() + 60000;
+  const scanHeaders = () => ({...headers, "retry-after": String(Math.max(0, Math.ceil((retryAt - Date.now()) / 1000)))});
   try {
     const indexed = await getMarketConviction(parsed.marketId);
-    if (!indexed) return NextResponse.json({error: "Envio conviction data is unavailable; no wallet context was inferred"}, {status: 503, headers});
-    if (!indexed.exists) return NextResponse.json({error: "No indexed market exists at this ID"}, {status: 404, headers});
+    if (!indexed) return NextResponse.json({error: "Envio conviction data is unavailable; no wallet context was inferred"}, {status: 503, headers: scanHeaders()});
+    if (!indexed.exists) return NextResponse.json({error: "No indexed market exists at this ID"}, {status: 404, headers: scanHeaders()});
     const report = await analyzeMarketConviction(parsed.marketId, parsed.chain, indexed.positions);
     console.info(JSON.stringify({event: "nansen_conviction_scan", marketId: parsed.marketId, chain: parsed.chain, status: report.status, queried: report.coverage.queried, succeeded: report.coverage.succeeded, linkedBackers: report.linkedBackers}));
-    return NextResponse.json({report}, {status: report.status === "unavailable" ? 503 : 200, headers});
+    return NextResponse.json({report}, {status: report.status === "unavailable" ? 503 : 200, headers: scanHeaders()});
   } catch {
-    return NextResponse.json({error: "Conviction analysis is unavailable; no conclusions were inferred"}, {status: 503, headers});
+    return NextResponse.json({error: "Conviction analysis is unavailable; no conclusions were inferred"}, {status: 503, headers: scanHeaders()});
   }
 }

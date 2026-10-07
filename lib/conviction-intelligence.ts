@@ -11,12 +11,15 @@ export type WalletContext = {
 };
 export type WalletQuery = {address: string; context?: WalletContext; error?: string};
 export type ConvictionLink = WalletRelation & {from: string; to: string};
+export type SharedCounterparty = {address: string; backers: string[]; proofs: Array<WalletRelation & {from: string}>};
 export type ConvictionReport = {
   version: 1; source: "nansen" | "fixture"; marketId: string; chain: IntelligenceChain;
   generatedAt: string; status: "ready" | "partial" | "unavailable";
   backers: Array<ConvictionBacker & {shareBps: number; contextStatus: "records" | "no-records" | "unavailable" | "not-queried"}>;
   totalConvictionWei: string; largestShareBps: number; linkedConvictionBps: number;
   linkedBackers: number; links: ConvictionLink[];
+  /** Additive: older retained reports did not inspect shared counterparties. */
+  sharedCounterparties?: SharedCounterparty[];
   coverage: {total: number; queried: number; succeeded: number; withRecords: number; truncated: number; stale: number};
   queries: Array<Omit<WalletQuery, "context"> & {fetchedAt?: string; requestId?: string | null; creditsUsed?: number | null; truncated?: boolean}>;
   findings: string[]; limitations: string[];
@@ -64,9 +67,18 @@ export function buildConvictionReport(input: {marketId: string; chain: Intellige
   const total = positions.reduce((sum, position) => sum + BigInt(position.spentWei), 0n);
   const share = (value: bigint) => total ? Number(value * 10_000n / total) : 0;
   const links: ConvictionLink[] = [];
+  const counterparties = new Map<string, Map<string, WalletRelation & {from: string}>>();
   const seen = new Set<string>();
   for (const [address, query] of queries) {
     for (const relation of query.context?.relations ?? []) {
+      if (relation.chain !== input.chain) throw new Error("Mismatched relationship chain");
+      if (relation.address !== address && !byAddress.has(relation.address)) {
+        const members = counterparties.get(relation.address) ?? new Map();
+        // One deterministic source transaction per backer/counterparty; no extra API call.
+        const prior = members.get(address);
+        if (!prior || `${relation.transactionHash}:${relation.relation}:${relation.timestamp}`.localeCompare(`${prior.transactionHash}:${prior.relation}:${prior.timestamp}`) < 0) members.set(address, {...relation, from: address});
+        counterparties.set(relation.address, members);
+      }
       if (!byAddress.has(relation.address) || relation.address === address) continue;
       const pair = [address, relation.address].sort();
       const key = `${pair.join(":")}:${relation.transactionHash}:${relation.relation}`;
@@ -76,7 +88,8 @@ export function buildConvictionReport(input: {marketId: string; chain: Intellige
     }
   }
   links.sort((a, b) => a.from.localeCompare(b.from) || a.to.localeCompare(b.to) || a.transactionHash.localeCompare(b.transactionHash));
-  const linked = new Set(links.flatMap(link => [link.from, link.to]));
+  const sharedCounterparties = [...counterparties].filter(([, members]) => members.size > 1).sort(([a], [b]) => a.localeCompare(b)).map(([address, members]) => ({address, backers: [...members.keys()].sort(), proofs: [...members.values()].sort((a, b) => a.from.localeCompare(b.from))}));
+  const linked = new Set([...links.flatMap(link => [link.from, link.to]), ...sharedCounterparties.flatMap(counterparty => counterparty.backers)]);
   const succeeded = [...queries.values()].filter(query => query.context);
   const withRecords = succeeded.filter(query => query.context!.relations.length).length;
   const largest = positions.reduce((max, position) => BigInt(position.spentWei) > max ? BigInt(position.spentWei) : max, 0n);
@@ -88,11 +101,12 @@ export function buildConvictionReport(input: {marketId: string; chain: Intellige
   else if (succeeded.length) findings.push("No direct connection between market backers was returned in the sampled Nansen records. This does not establish independent ownership.");
   else findings.push("Nansen relationship coverage is unavailable; wallet independence is unknown.");
   if (succeeded.length && !withRecords) findings.push("Nansen returned no relationship records for the queried addresses on this dataset. Try another context chain if these wallets have activity there.");
+  if (sharedCounterparties.length) findings.push(`${sharedCounterparties.length} shared counterparties appear in multiple backers' returned records. These can be ordinary services or contracts, not common owners or direct transfers between scouts.`);
   if (coverage.stale) findings.push(`${coverage.stale} wallet context snapshots are at least 15 minutes old. Check the source timestamps before acting; refresh may be pending or unavailable.`);
-  if (largestShareBps >= 5_000 && positions.length > 1) findings.push("A majority of the visible conviction comes from one wallet. Review the scout ledger rather than treating wallet count as equal support.");
+  if (largestShareBps >= 5_000 && positions.length > 1) findings.push("Half or more of the visible conviction comes from one wallet. Review the scout ledger rather than treating wallet count as equal support.");
   const limitations = ["Connections can reflect ordinary transfers or exchange activity. They are not proof of common ownership, Sybil behavior or manipulation.", "External wallet context does not change Dibs rank, reputation, reward eligibility or CRE quality settlement.", "Nansen context and Envio's Dibs staking network are separate datasets; testnet activity is not assumed to be indexed by Nansen.", `At most ${MAX_INTELLIGENCE_BACKERS} earliest backers are queried, with the first 100 relationship records per wallet. Missing, failed and truncated data are not evidence of independence.`];
   return {version: 1, source: input.source ?? "nansen", marketId: input.marketId, chain: input.chain, generatedAt, status: !succeeded.length ? positions.length ? "unavailable" : "partial" : coverage.succeeded < coverage.total || coverage.truncated || coverage.stale ? "partial" : "ready", backers: positions.map(position => {
     const query = queries.get(position.address);
     return {...position, shareBps: share(BigInt(position.spentWei)), contextStatus: !query ? "not-queried" : !query.context ? "unavailable" : query.context.relations.length ? "records" : "no-records"};
-  }), totalConvictionWei: total.toString(), largestShareBps, linkedConvictionBps, linkedBackers: linked.size, links, coverage, queries: [...queries.values()].map(query => ({address: query.address, ...(query.context ? {fetchedAt: query.context.fetchedAt, requestId: query.context.requestId, creditsUsed: query.context.creditsUsed, truncated: query.context.truncated} : {error: query.error ?? "unavailable"})})), findings, limitations};
+  }), totalConvictionWei: total.toString(), largestShareBps, linkedConvictionBps, linkedBackers: linked.size, links, sharedCounterparties, coverage, queries: [...queries.values()].map(query => ({address: query.address, ...(query.context ? {fetchedAt: query.context.fetchedAt, requestId: query.context.requestId, creditsUsed: query.context.creditsUsed, truncated: query.context.truncated} : {error: query.error ?? "unavailable"})})), findings, limitations};
 }

@@ -92,14 +92,17 @@ try {
     await page("Emulation.setDeviceMetricsOverride", {width, height, deviceScaleFactor: 1, mobile: name === "mobile"});
     await page("Page.navigate", {url: `${base}/intelligence`});
     await waitFor('document.querySelectorAll(".conviction-lens").length === 2 && document.body.innerText.includes("Recorded genuine API evidence")');
+    await waitFor('document.querySelector(".connect-button")?.disabled === false');
     const result = await evaluate('({historical: document.body.innerText.includes("historical snapshot"), fixture: document.body.innerText.includes("synthetic wallets and relationships"), requests: document.querySelectorAll("#lens-title-32").length, overflow: document.documentElement.scrollWidth > innerWidth + 1, forms: document.querySelectorAll(".lens-toolbar").length, headings: document.querySelectorAll("h1").length})');
     assert(result.historical && result.fixture); assert.equal(result.requests, 1); assert.equal(result.forms, 0); assert.equal(result.headings, 1); assert.equal(result.overflow, false);
+    const review = await evaluate('(()=>{const real=document.querySelector("#conviction-lens"),fixture=[...document.querySelectorAll(".conviction-lens")][1];const link=fixture.querySelector(".lens-review-steps a[href*=lens-evidence]");link.click();const opened=fixture.querySelector("details").open;fixture.querySelector("details").open=false;return{briefs:document.querySelectorAll(".lens-brief").length,historicalUnknown:real.querySelector(".lens-brief").textContent.includes("not verified independence"),fixtureGroups:fixture.querySelectorAll(".lens-groups article").length,sharedLines:fixture.querySelectorAll(".lens-connection.shared").length,sourceProofs:fixture.querySelectorAll(".lens-shared-evidence .lens-transactions li>div").length,fixtureExplorerLinks:fixture.querySelectorAll(".lens-transactions a").length,reviewLinkOpenedEvidence:opened}})()');
+    assert.equal(review.briefs, 2); assert(review.historicalUnknown && review.reviewLinkOpenedEvidence, JSON.stringify(review)); assert.equal(review.fixtureGroups, 1); assert.equal(review.sharedLines, 1); assert.equal(review.sourceProofs, 2); assert.equal(review.fixtureExplorerLinks, 0);
     await waitFor('document.querySelector(".lens-map svg").getBoundingClientRect().height > 200');
     await evaluate('(async()=>{await document.fonts.ready;document.querySelector(".conviction-lens").scrollIntoView({block:"start",behavior:"instant"});await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));})()');
     await waitFor('(()=>{const top=document.querySelector(".conviction-lens").getBoundingClientRect().top;return top>=0 && top<150})()');
     const screenshot = await page("Page.captureScreenshot", {format: "png"});
     await writeFile(resolve(artifacts, `${name}.png`), Buffer.from(screenshot.data, "base64"));
-    checks.push({viewport: name, ...result});
+    checks.push({viewport: name, ...result, review});
   }
   await page("Page.navigate", {url: `${base}/market/32`});
   await waitFor('document.querySelector(".lens-toolbar") && document.body.innerText.includes("Sign in to inspect conviction")');

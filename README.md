@@ -92,6 +92,11 @@ exact Envio scout stakes with Nansen's `POST /api/v1/profiler/address/related-wa
 it is decision context, not a settlement input or a Smart Money leaderboard. The standalone
 `/intelligence` page includes a genuine historical market-32 capture (six successful Base queries,
 no returned relationships), separately from an explicitly synthetic, non-stakeable teaching example.
+The pre-stake review brief combines direct relationships and shared counterparties into
+stake-weighted groups, links each finding to inspectable evidence, and prioritizes concentration
+and coverage checks. Indirect connections are not labelled as direct transfers or common owners.
+Failed retries retain previous results, dataset results stay separate, and the cooldown counts down
+without automatic paid retries. No-backers markets do not offer an unnecessary wallet scan.
 
 Configure server-only `NANSEN_API_KEY` and `NANSEN_INTELLIGENCE_ENABLED=true` only after checking
 the Nansen account's credit allowance. Paid queries are explicit, Privy/Farcaster-authenticated,

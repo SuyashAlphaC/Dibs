@@ -21,13 +21,50 @@ an evidence-based context layer before committing:
 
 1. Read genuine scout positions from Envio, retaining exact wei and exact event seconds.
 2. Query up to eight earliest backer addresses through Nansen's related-wallet endpoint.
-3. Join returned related addresses against this market's actual backers; ignore unrelated wallets.
-4. Explain the largest wallet's stake share, linked backer count and linked stake share; show a map
-   and relationship transaction links rather than a raw response table.
+3. Match direct relationships against genuine backers, and intersect their returned related-wallet
+   records to detect shared external counterparties. External addresses never become Dibs scouts.
+4. Build connected components across direct relationships and shared counterparties; compute
+   each group's exact-wei share without double-counting overlapping paths. Present a pre-stake
+   evidence review brief, source transactions and scout-history links, not an ownership verdict.
 5. Preserve uncertainty, partial coverage, source request IDs, timestamps and downloadable JSON.
 
 The feature appears on indexed market pages before the existing position controls; feed cards
 link to its anchor. `/intelligence` explains the feature with an isolated labelled teaching fixture.
+
+### What Nansen changes in the product
+
+The **evidence review brief** asks scouts to review returned connected groups together instead
+of treating a larger wallet count as separate supporting signals. Every group derives from actual
+returned Nansen relationships and real Envio stakes. Solid map lines show direct relationships;
+dashed lines show a shared counterparty, **not** a transfer between the backers. A common exchange,
+faucet, service or contract can connect unrelated people. This is never an owner/Sybil classifier.
+
+The brief prioritizes inspecting transaction proof when groups exist, checking scout history when
+one wallet supplies at least 50% of conviction, and examining missing/truncated/stale coverage.
+These are transparent review rules, not an AI-generated safety rating or buy recommendation.
+No-overlap results still prompt coverage review; they do not earn a green "independent" badge.
+The dataset selector inspects the same genuine backers' external context, not testnet coverage.
+
+Shared-counterparty proofs retain one deterministic source transaction per backer/counterparty,
+selected by transaction-hash order from returned records. Connected-group sums use integer wei;
+basis-point shares round down. Outside addresses, repeated proofs, reciprocal relationships and
+overlapping groups never inflate scout count or stake. This adds **zero provider requests** beyond
+the existing eight-wallet maximum. Both legs of indirect evidence are inspectable. Downloads
+include the review brief, methodology version, selected dataset and all retained source proofs.
+
+The historical operator report remains unchanged and explicitly says shared counterparties were
+not inspected by that older analysis. The updated fixture demonstrates direct and indirect paths
+with permanently labelled synthetic evidence. A fresh live scan runs the expanded analysis.
+
+### Scan lifecycle
+
+- Empty indexed markets disable the scan control; there are no backing wallets to analyze.
+- A failed retry preserves the previous report and labels it as retained, not a new successful scan.
+- Switching datasets preserves reports separately for Monad, Base and Ethereum for this page visit;
+  it never relabels another chain's result. No provider query runs on a selector change.
+- `Retry-After` drives a visible, disabled-button countdown. Scans never retry automatically.
+- Retained live context ages into stale/partial coverage after 15 minutes without changing source
+  timestamps, silently refreshing data or making a paid request.
 
 ## Exact integration
 
@@ -179,9 +216,15 @@ npm run test:nansen-route
 - `lib/nansen-service.ts`: server-only credentials, persistent cache and bounded batch execution.
 - `lib/intelligence-request.ts`: input/origin validation and user scan cooldown.
 - `app/api/intelligence/market/[marketId]/route.ts`: authorization and genuine indexed wallet join.
-- `components/market/conviction-lens.tsx`: decision map, coverage, transaction proof and report export.
+- `components/market/conviction-lens.tsx`: dataset-separated reports, cooldown, map, coverage,
+  transaction proof and report export.
+- `components/market/conviction-brief.tsx`: actionable evidence review and connected stake groups.
+- `lib/conviction-decision.ts`: exact-wei connected components, review rules and displayed freshness.
+- `lib/conviction-scan.ts`: pure scan lifecycle reducer and validated retry countdown.
 - `lib/conviction-intelligence.test.ts`: relationship join, exact stake shares, errors, cache budgets,
   freshness, origins, input validation, label/secret isolation and explicit fixture boundaries.
+- `lib/conviction-decision.test.ts`: shared source proof, transitive groups, exact stake accounting,
+  partial/empty evidence, old-report compatibility, retry retention and chain separation.
 - `scripts/check-nansen-route.mjs`: real production-built GET/POST boundaries in disabled and
   configured states, with all network calls blocked and no real credentials involved.
 - `scripts/nansen-live-proof.ts`: explicitly invoked, bounded genuine provider field capture.
