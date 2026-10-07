@@ -52,7 +52,7 @@ Production alias: https://dibs-metropolis.vercel.app
 - Production Nansen configuration: enabled and configured, at most eight wallets, 900-second cache.
 - `/api/health`: healthy, Envio ready, CRE receiver still in pinned DON mode.
 - Cross-site scan POST: HTTP 403. Unauthenticated same-origin browser POST: HTTP 401.
-- Desktop and mobile checks passed at `2026-10-07T17:25:36.749Z`, with zero runtime exceptions,
+- Desktop and mobile checks passed at `2026-10-07T17:27:15.959Z`, with zero runtime exceptions,
   no horizontal overflow, a full-size map and separate historical/synthetic disclosures.
 - Public responses passed the real-key redaction check. Browser smoke checks made zero paid calls.
 - [Machine-readable production browser proof](production-browser-verification.json),

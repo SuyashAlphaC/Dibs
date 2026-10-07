@@ -59,7 +59,8 @@ try {
     const result = await evaluate('({historical: document.body.innerText.includes("historical snapshot"), fixture: document.body.innerText.includes("synthetic wallets and relationships"), requests: document.querySelectorAll("#lens-title-32").length, overflow: document.documentElement.scrollWidth > innerWidth + 1, forms: document.querySelectorAll(".lens-toolbar").length, headings: document.querySelectorAll("h1").length})');
     assert(result.historical && result.fixture); assert.equal(result.requests, 1); assert.equal(result.forms, 0); assert.equal(result.headings, 1); assert.equal(result.overflow, false);
     await waitFor('document.querySelector(".lens-map svg").getBoundingClientRect().height > 200');
-    await evaluate('document.querySelector(".conviction-lens").scrollIntoView({block:"start"});');
+    await evaluate('(async()=>{await document.fonts.ready;document.querySelector(".conviction-lens").scrollIntoView({block:"start",behavior:"instant"});await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));})()');
+    await waitFor('(()=>{const top=document.querySelector(".conviction-lens").getBoundingClientRect().top;return top>=0 && top<150})()');
     const screenshot = await page("Page.captureScreenshot", {format: "png"});
     await writeFile(resolve(artifacts, `${name}.png`), Buffer.from(screenshot.data, "base64"));
     checks.push({viewport: name, ...result});
