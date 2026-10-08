@@ -42,7 +42,7 @@ no Nansen key. Those initial limitations were removed for the following activati
 - Client-bundle secret scan checked 199 JavaScript files: no Nansen key appeared. The captured
   JSON and generated public HTML also passed the same secret-exposure check.
 
-## Production verification
+## Production verification snapshot — 2026-10-07
 
 Feature commit: `7b7bc88`. Vercel deployment: `91khcTvEXRTqqaK9JgtMMtNJmCDm`.
 Deployment URL: https://dibs-metropolis-1w19eqa9c-suyashagrawal862-5919s-projects.vercel.app
@@ -62,3 +62,8 @@ Production alias: https://dibs-metropolis.vercel.app
 The live provider capture was made through the explicit operator CLI, not a signed-in browser.
 No complete authenticated user scan or demo video is claimed. See the
 [setup, proof artifact and remaining demo checklist](README.md).
+
+This snapshot records the activation deployment and remains historical evidence. Current runtime
+health, Privy readiness, QStash ownership and the CRE DON workflow are documented in
+[`../../OPERATIONS.md`](../../OPERATIONS.md); do not interpret this older deployment ID as the
+current Vercel release.

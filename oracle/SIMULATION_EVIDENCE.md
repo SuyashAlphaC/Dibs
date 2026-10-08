@@ -48,9 +48,10 @@ market=3 action=resolve score=3800 upheld=true accepted=3 rejected=2 report=prep
 - `config.simulation.json` sets `dryRun: true`, so the report is prepared but not submitted.
 - The deterministic fixture is served from `/api/oracle/simulation-fixture`, returns
   `simulation: true`, and is never used by `config.testnet.json`.
-- At the time of this run, the receiver used its fail-closed pre-deployment configuration. It is
-  now pinned to active workflow ID
-  `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`.
+- At the time of this run, the receiver used its fail-closed pre-deployment configuration. The
+  current production receiver is pinned to workflow ID
+  `0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb`; this simulation artifact
+  is not tied to that DON execution.
 - Contract-side receiver forwarding is covered separately by seven Foundry tests, including
   wrong-forwarder, wrong-chain, wrong-workflow, and function-allowlist rejection cases.
 

@@ -49,7 +49,8 @@ received the configured `0.002 MON` community seed.
 
 The production market keeper runs every five minutes through Upstash QStash and advances oracle
 timeouts, challenge timeouts, and epoch finalization in addition to opening eligible markets.
-GitHub Actions is retained only as an operator-triggered recovery path.
+GitHub Actions is retained only as an operator-triggered recovery path. See the
+[production operations runbook](../OPERATIONS.md) for the secret names and configure/verify commands.
 
 ## CRE safety state
 
@@ -61,16 +62,19 @@ The receiver is pinned to the updated DON workflow:
 - Updated on 2026-10-07 with bounded batches, node-side scoring before consensus, and a two-minute trigger.
 - CRE registry status: `ACTIVE`
 
-### Live DON deployment — 2026-10-05
+The latest CLI verification on 2026-10-08 reported the workflow `ACTIVE` and a successful execution
+ending at `2026-10-08T15:18:08Z` (`a9cab736-4fc8-43b9-8e8a-2e6809499cc1`).
+
+### Superseded DON deployment record — 2026-10-05
 
 - CRE account: authenticated to organization `org_5KhPGUSaC3kQiPUM`.
 - Monad testnet is supported by CRE and resolves to Keystone Forwarder
   `0xF8344CFd5c43616a4366C34E3EEE75af79a74482`, matching the receiver.
 - Workflow: `dibs-settlement-testnet`.
-- Workflow ID: `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552`.
+- Workflow ID: `0x0087c79221932bb3a2dbee759ffd89a1325e58db7ba736b6abaca52e20128552` (superseded; do not pin or use for production).
 - Registry: private; status: `ACTIVE`.
 - Registered: `2026-10-05T03:07:55Z`; deployed: `2026-10-05T03:07:56Z`.
-- Verified on 2026-10-07: latest execution status `SUCCESS` with no workflow errors.
+- Verified on 2026-10-07: historical execution status `SUCCESS` with no workflow errors.
 - Scoring tests: 3/3 passing.
 - TypeScript: passing.
 - Production deployment access: enabled through `cre account access`.

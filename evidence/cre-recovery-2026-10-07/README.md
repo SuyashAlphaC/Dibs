@@ -63,6 +63,13 @@ and queue snapshot are retained in [`executions.json`](executions.json). These a
 submissions, not a claim that the two-hour challenge window has already elapsed or rewards have
 been claimed.
 
+## Current liveness check
+
+The active registry was rechecked on 2026-10-08. The deployment remained `ACTIVE`, the latest
+execution `a9cab736-4fc8-43b9-8e8a-2e6809499cc1` completed with `SUCCESS` at
+`2026-10-08T15:18:08Z`, and the public health endpoint reported a pinned DON receiver with no queued
+settlement actions. This is a liveness check, not a replacement for the immutable receipts above.
+
 ## Regression proof
 
 - A raw observation larger than 25 KB retains all 600 interactions and produces the same score and

@@ -1,6 +1,6 @@
 # Dibs
 
-Hackathon judges: see the [submission guide](./SUBMISSION.md) and the live [/evidence](https://dibs-metropolis.vercel.app/evidence) ledger for the demo path, architecture, sponsor evidence, and explicit execution boundaries.
+Hackathon judges: see the [submission guide](./SUBMISSION.md), the [production operations runbook](./OPERATIONS.md), and the live [/evidence](https://dibs-metropolis.vercel.app/evidence) ledger for the demo path, architecture, sponsor evidence, and explicit execution boundaries.
 
 **Call culture before it matters.** Dibs is a conviction-ranked Farcaster feed on Monad. Scouts buy increasingly expensive conviction units on casts they believe will grow; quality-weighted engagement resolves each epoch, and successful early scouts share the reward allocation.
 
@@ -118,6 +118,9 @@ cd ../oracle && npm test && npm run typecheck
 
 ## Deployment order
 
+The canonical current deployment, runtime, recovery, and judge-demo sequence is maintained in the
+[production operations runbook](./OPERATIONS.md). The details below remain as a quick reference.
+
 1. Set `CRE_FORWARDER_ADDRESS` to the official forwarder for the target Monad network. Confirm the address for your CRE tenant with `cre workflow supported-chains --output json`.
 2. Run `contracts/script/Deploy.s.sol`. It deploys Dibs, deploys `DibsSettlementReceiver`, and makes the receiver Dibs' oracle atomically in one broadcast.
 3. Configure `MARKET_OPENER_PRIVATE_KEY` and `CRON_SECRET`; set explicit `MARKET_EPOCH_SEED_MON`, `MARKET_MAX_EPOCH_SEED_MON`, `MARKET_MIN_OPERATOR_BALANCE_MON`, `MAX_MARKETS_PER_RUN`, and `MAX_MAINTENANCE_TRANSACTIONS_PER_RUN` limits. Enable `MARKET_AUTOMATION_ENABLED` and `MARKET_OPENING_ENABLED` only after validating those limits. The keeper opens only substantive root casts younger than 30 minutes with fewer than 25 interactions; referral promotions, bonus/airdrop solicitations, and hashtag/mention/link spam are rejected before any chain write.
@@ -146,13 +149,14 @@ it updates the existing schedule instead of creating duplicates. Verify it at an
 with `operation=delete` and re-enabling the schedule block in `market-keeper.yml`.
 
 The GitHub workflow retains `workflow_dispatch` as the recovery path but has no scheduled trigger.
-Restore its schedule only if the QStash schedule is deleted or paused. Farcaster ownership for
+Use it only if the QStash schedule is deleted or paused, then restore QStash ownership immediately.
+Farcaster ownership for
 `dibs-metropolis.vercel.app` is signed by FID `2459338`; the association is stored in Vercel and
 served through the production manifest.
 
 The endpoint is idempotent at the contract boundary and refuses to spend when the operator safety
-floor or epoch limits would be violated. For stricter production SLOs, run the same endpoint from
-an external scheduler or always-on worker; Vercel Hobby cannot run sub-daily Cron Jobs.
+floor or epoch limits would be violated. QStash is the external production scheduler; Vercel does
+not provide the sub-daily cron that drives this endpoint.
 
 Automation is fail-closed: unset switches perform no writes, the seed defaults to zero in code,
 the configured seed may not exceed the explicit cap, and the operator must retain the configured
@@ -182,5 +186,5 @@ The fixture is explicitly labelled as simulated; disable it immediately after th
 challenge through the UI, and use the normal production broadcast to recompute from real Neynar
 data. The endpoint is disabled by default.
 
-The in-app Scout Assistant is a deterministic, transparent scan over live Envio markets. It can
-rank early, high-momentum, or closing signals, but it never signs or submits a wallet transaction.
+The isolated `npm run cre:broadcast` and `simulation-settings` targets are rehearsal paths only;
+they are never the production settlement flow.

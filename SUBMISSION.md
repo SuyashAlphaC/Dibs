@@ -13,6 +13,7 @@
 - Judge-facing CRE console: https://dibs-metropolis.vercel.app/simulation
 - Live acceptance ledger: https://dibs-metropolis.vercel.app/evidence
 - Public integration health: https://dibs-metropolis.vercel.app/api/health
+- Current production runbook: [`OPERATIONS.md`](OPERATIONS.md)
 - Verified DON settlement (market 32): `0x8d0fa1b3d862e896c8fe161b22928a64089ae96adb8281fde03fd588306b5fd4`
 - Verified positive DON settlement (market 33): `0xeee2341f26b475d0c1f44a69625d4f6b640326b357313ca132e85aa7cece887a`
 
@@ -55,7 +56,7 @@ flowchart LR
 | Privy | Email/passkey/Farcaster authentication, automatic embedded wallets, Farcaster account linking, server-verified nominations, user-confirmed Monad transactions and embedded-wallet gas sponsorship | Live identity-to-action proof at `/privy`, production health status, and wallet transaction path |
 | Farcaster | Source of eligible casts and Mini App distribution | Valid signed account association and live Mini App manifest |
 | Chainlink CRE | Scheduled DON execution, deterministic quality scoring, challenge re-observation and authenticated Monad report delivery | Active private-registry workflow plus confirmed DON writes and events recorded in `evidence/live-don-settlement` |
-| Nansen API | Conviction Lens combines indexed scout stakes with related-wallet evidence to make concentration and observed connections actionable before staking | Six actual market-32 backers queried on Base, genuine request IDs/timestamps retained in `evidence/nansen/market-32-base-live.json`; read-only historical capture and separate teaching fixture at `/intelligence`. Fresh authenticated user demo remains to be recorded. |
+| Nansen API | Conviction Lens combines indexed scout stakes with related-wallet evidence to make concentration and observed connections actionable before staking | Six actual market-32 backers queried on Base, genuine request IDs/timestamps retained in `evidence/nansen/market-32-base-live.json`; read-only historical capture and separate labelled teaching fixture at `/intelligence`. |
 
 ### Nansen bounty boundary
 
@@ -67,8 +68,8 @@ links, per-query coverage, source timestamps and downloadable derived evidence.
 The operator-captured field report for market `32` contains six successful genuine Nansen queries,
 six request IDs, timestamps, and six reported credits used. No relationship records were returned;
 the product explains this coverage limit rather than inferring independent ownership. This capture
-is historical, not an authenticated end-user scan. Record the fresh signed-in UI demo to complete
-that submission proof. The separate `/intelligence` teaching fixture stays labelled synthetic.
+is historical, not an authenticated end-user scan; a fresh signed-in UI run is an optional judge
+demonstration. The separate `/intelligence` teaching fixture stays labelled synthetic.
 No Nansen label or Smart Money dataset is redistributed. External wallet context cannot change
 conviction rank, scout reputation, CRE quality scores or payouts.
 
@@ -86,9 +87,10 @@ The live path is proven by two successful Forwarder transactions. Market 32 reco
 result at block `68455332`; market 33 recorded a positive quality-growth score of `6685` at block
 `68455340`. Both transactions emitted `SettlementReportForwarded` from the receiver and
 `ResultSubmitted` from Dibs. The workflow registry reports `ACTIVE`, and its latest observed run on
-2026-10-07 completed with status `SUCCESS`.
+2026-10-08 completed with status `SUCCESS`; the current health check reported an empty settlement
+queue.
 
-The older fixture and `simulate --broadcast` artifacts remain checked in as explicitly historical
+The fixture and `simulate --broadcast` artifacts remain separate, explicitly historical rehearsal
 reproduction evidence. They are not the production settlement claim. The observation API currently
 aggregates Neynar data before CRE consensus; this external-data trust boundary is disclosed rather
 than presented as direct node-to-Neynar access. `/evidence` also keeps unrelated field proofs—such
@@ -114,10 +116,13 @@ cd ../oracle && npm test && npm run typecheck
 
 ## Demo recording outline
 
-- 0:00–0:20 — Why popularity feeds miss early cultural signal.
-- 0:20–0:45 — Privy sign-in, automatic embedded wallet and linked Farcaster identity.
-- 0:45–1:00 — User-approved Dibs transaction with sponsored embedded-wallet gas.
-- 1:00–1:25 — Conviction and rank move; the Envio position resolves to the scout identity.
-- 1:25–2:05 — Active CRE DON workflow scores observations and authenticates a Monad report.
-- 2:05–2:35 — Inspect `ResultSubmitted`, `SettlementReportForwarded`, Envio indexing and scout reputation.
-- 2:35–2:50 — Architecture, production trust boundary, and honestly labelled pending field proofs.
+- 0:00–0:20 — Explain why popularity feeds miss early cultural signals.
+- 0:20–0:45 — Sign in through Privy, show the embedded wallet and linked Farcaster identity.
+- 0:45–1:00 — Approve a user-visible MON conviction transaction; show sponsored gas for an
+  embedded wallet when enabled.
+- 1:00–1:25 — Show Envio indexing, conviction rank and the scout identity in the ledger.
+- 1:25–1:50 — Run the authenticated Nansen Conviction Lens and show concentration, coverage and
+  source evidence; keep empty relationship results explicitly labelled as inconclusive.
+- 1:50–2:20 — Show the active CRE DON workflow, pinned receiver and a successful Forwarder report.
+- 2:20–2:40 — Explain that QStash opens/maintains markets every five minutes while the DON settles
+  every two minutes; GitHub workflows only monitor or recover.

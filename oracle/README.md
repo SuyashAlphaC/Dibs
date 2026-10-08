@@ -1,6 +1,11 @@
 # Dibs Chainlink CRE workflow
 
-The production workflow runs every two minutes, fetches up to eight closing Farcaster-market observations, applies the quality filter independently on each DON node, agrees on compact settlement decisions, and writes chain-bound `submitResult` reports to `DibsSettlementReceiver` on Monad.
+The active production workflow is `dibs-settlement-testnet`, pinned to workflow ID
+`0x00733a308f4ccaf2b3bdf6952866e293ce85b31be878e6883c54390b944b72fb`. It runs every two minutes,
+fetches up to eight closing Farcaster-market observations, applies the quality filter independently
+on each DON node, agrees on compact settlement decisions, and writes chain-bound `submitResult`
+reports to `DibsSettlementReceiver` on Monad. The DON owns execution; the GitHub workflow is a
+monitor and the QStash keeper only opens/maintains markets.
 
 The application exposes `/api/oracle/observations`. It selects closed, unresolved markets from Envio, fetches each cast's likes, recasts, and reply tree from Neynar, and derives account age from Neynar's `registered_at` field plus account quality from `score`/`experimental.neynar_user_score`. The deterministic market close time is used as `observedAt`, so CRE nodes hash identical evidence rather than their individual wall clocks.
 
@@ -48,7 +53,9 @@ cre workflow activate . --target staging-settings --yes
 The pin script verifies ownership, chain, core and official Forwarder before sending the owner
 transaction, then verifies the confirmed pin. It refuses a zero workflow ID.
 
-Run `npm test` and `npm run typecheck` locally. `config.testnet.json` targets the deployed **receiver** address (not the core Dibs address). Authenticate the CRE CLI, then simulate and deploy the workflow through the checked-in target manifests:
+Run `npm test` and `npm run typecheck` locally. `config.testnet.json` targets the deployed
+**receiver** address (not the core Dibs address). Authenticate the CRE CLI, optionally simulate the
+fixture for a local preflight, then deploy the production target through the checked-in manifest:
 
 ```sh
 cre workflow simulate . --target staging-settings
@@ -65,16 +72,17 @@ cre workflow list --output json
 The deploy command returns a workflow ID. Pin that exact ID on the deployed receiver using its owner
 key, then set `NEXT_PUBLIC_CRE_SETTLEMENT_MODE=don` in the app. The receiver remains fail-closed until
 the ID is pinned. The DON's cron trigger owns settlement execution; GitHub only monitors deployment
-health and does not run the local broadcast simulator.
+health and does not run the local broadcast simulator. Follow [`../OPERATIONS.md`](../OPERATIONS.md)
+for the full rotation and verification sequence.
 
-For a local fallback or reproducible hackathon rehearsal, a ready testnet observation can be submitted through the
-CRE broadcast simulator from the repository root:
+For a local fallback or reproducible hackathon rehearsal, a ready testnet observation can be prepared
+through the CRE broadcast simulator from the repository root:
 
 ```sh
 npm run cre:broadcast
 ```
 
-The script refuses to change onchain state when the production observation queue is empty. For
+The script refuses to change onchain state when `CRE_SETTLEMENT_MODE=don`. For an explicitly enabled
 `simulate --broadcast`, it validates a dedicated receiver that trusts CRE's Monad MockForwarder,
 temporarily routes only the Dibs oracle role to that receiver, broadcasts the reports, and restores
 the production Keystone receiver on success, failure, or interruption. The workflow verifies every
