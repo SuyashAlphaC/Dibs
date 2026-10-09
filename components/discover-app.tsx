@@ -49,13 +49,15 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
     return market.category===filter;
   }
   const query=initialQuery.trim().toLowerCase();
-  const visible = useMemo(()=>marketList.filter((market)=>{
-    if(query&&!`${market.author.displayName} ${market.author.username} ${market.text} ${market.category}`.toLowerCase().includes(query))return false;
-    if(!categoryMatches(market,category))return false;
-    if(mode==="opened")return market.ageMinutes<=30;
-    if(mode==="early")return market.status==="active"||market.status==="closing";
-    return true;
-  }),[marketList,category,mode,query]);
+  const visible = useMemo(()=>{
+    const filtered=marketList.filter((market)=>{
+      if(query&&!`${market.author.displayName} ${market.author.username} ${market.text} ${market.category}`.toLowerCase().includes(query))return false;
+      if(!categoryMatches(market,category))return false;
+      if(mode==="opened"||mode==="early")return market.status==="active"||market.status==="closing";
+      return true;
+    });
+    return mode==="opened"?filtered.sort((a,b)=>(b.openedAt??Date.parse(b.timestamp)/1000)-(a.openedAt??Date.parse(a.timestamp)/1000)):filtered;
+  },[marketList,category,mode,query]);
   const feedPageCount=Math.max(1,Math.ceil(visible.length/feedPageSize));
   const feedStart=(feedPage-1)*feedPageSize;
   const pagedVisible=visible.slice(feedStart,feedStart+feedPageSize);
@@ -149,7 +151,7 @@ export function DiscoverApp({initialMode="trending",initialQuery=""}:{initialMod
     <div className="feed-label"><span>{visible.length} signal{visible.length===1?"":"s"}{query?` matching “${initialQuery.trim()}”`:""}</span><span>{dataSource==="envio"?"Live · Envio indexed":dataSource==="demo"?"Preview · not stakeable":dataSource==="loading"?"Loading live index":"Service unavailable"}</span></div>
     {visible.length>feedPageSize&&<nav className="feed-pagination" aria-label="Conviction feed pages"><button type="button" className="secondary-button" onClick={()=>setFeedPage(page=>Math.max(1,page-1))} disabled={feedPage===1} aria-label="Show newer markets">← Newer</button><div aria-live="polite">Page <strong>{feedPage}</strong> of <strong>{feedPageCount}</strong><span> · Showing {feedStart+1}–{Math.min(feedStart+feedPageSize,visible.length)}</span></div><button type="button" className="secondary-button" onClick={()=>setFeedPage(page=>Math.min(feedPageCount,page+1))} disabled={feedPage===feedPageCount} aria-label="Show older markets">Older →</button></nav>}
     {mobileView==="stack"&&<MobileDibsStack markets={visible} onDibs={startDibs}/>}<section className={`market-feed ${mobileView==="stack"?"mobile-feed-hidden":""}`} aria-labelledby="live-markets-title"><h2 className="sr-only" id="live-markets-title">Live Farcaster discovery markets</h2>{pagedVisible.map((market)=><CastMarketCard key={market.id} market={market} onDibs={startDibs} justDibsed={recentId===market.id}/>)}</section>
-    {!visible.length&&<section className="empty-state search-empty"><strong>{dataSource==="loading"?"Connecting to the live index…":dataSource==="unavailable"?"Live markets are temporarily unavailable":marketList.length?(mode==="early"?"No early markets are open right now.":mode==="opened"?"No newly opened markets are indexed right now.":"No matching signals"):"No live markets right now"}</strong><p>{dataSource==="loading"?"This should take only a moment.":dataSource==="unavailable"?"Dibs will retry automatically. No preview data is being presented as live.":marketList.length?(mode==="opened"?"No market opened in the last 30 minutes. Try All to see the indexed feed.":"Try another category or All to see the indexed feed."):"The market radar scans for eligible early casts every few minutes."}</p>{marketList.length&&<button className="secondary-button" onClick={()=>{setMode("trending");setCategory("All");}}>Show all indexed signals</button>}</section>}
+    {!visible.length&&<section className="empty-state search-empty"><strong>{dataSource==="loading"?"Connecting to the live index…":dataSource==="unavailable"?"Live markets are temporarily unavailable":marketList.length?(mode==="early"?"No early markets are open right now.":mode==="opened"?"No open markets match this scan.":"No matching signals"):"No live markets right now"}</strong><p>{dataSource==="loading"?"This should take only a moment.":dataSource==="unavailable"?"Dibs will retry automatically. No preview data is being presented as live.":marketList.length?(mode==="opened"?"New shows currently open markets, most recently opened first. Try All for older or settled signals.":"Try another category or All to see the indexed feed."):"The market radar scans for eligible early casts every few minutes."}</p>{marketList.length&&<button className="secondary-button" onClick={()=>{setMode("trending");setCategory("All");}}>Show all indexed signals</button>}</section>}
     <section className="discovery-explainer" aria-labelledby="how-dibs-works">
       <p className="eyebrow">Transparent discovery</p><h2 id="how-dibs-works">How does Dibs find early Farcaster signals?</h2>
       <p>Dibs turns early social discovery into an accountable onchain signal. Scouts back promising casts with MON, collective conviction determines discovery rank, and quality-weighted engagement settles each market.</p>

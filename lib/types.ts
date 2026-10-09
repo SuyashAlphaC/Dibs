@@ -24,6 +24,7 @@ export interface CastMarket {
   author: CastAuthor;
   text: string;
   timestamp: string;
+  openedAt?: number;
   ageMinutes: number;
   likes: number;
   recasts: number;

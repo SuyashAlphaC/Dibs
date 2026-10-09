@@ -264,6 +264,7 @@ async function toCastMarket(
     },
     text: cast.text,
     timestamp: cast.timestamp,
+    openedAt: Number(market.openedAt),
     ageMinutes,
     likes: cast.reactions?.likes_count ?? 0,
     recasts: cast.reactions?.recasts_count ?? 0,
