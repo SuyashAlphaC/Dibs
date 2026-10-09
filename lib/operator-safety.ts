@@ -49,3 +49,14 @@ export function assertOperatorCanSpend(balance:bigint,policy:Pick<MarketAutomati
   const required=policy.epochSeed+policy.minOperatorBalance;
   if(balance<required)throw new Error(`Operator balance guard: ${formatEther(balance)} MON is below the ${formatEther(required)} MON required balance`);
 }
+
+export function planEpochFunding({rewardPool,committed,marketSeed,maxEpochSeed,requested,allowFunding}:{
+  rewardPool:bigint;committed:bigint;marketSeed:bigint;maxEpochSeed:bigint;requested:number;allowFunding:boolean;
+}){
+  if(marketSeed===0n)return {openCount:requested,topUp:0n};
+  const available=rewardPool>committed?rewardPool-committed:0n;
+  const capRoom=allowFunding&&maxEpochSeed>rewardPool?maxEpochSeed-rewardPool:0n;
+  const openCount=Math.min(requested,Number((available+capRoom)/marketSeed));
+  const needed=BigInt(openCount)*marketSeed;
+  return {openCount,topUp:needed>available?needed-available:0n};
+}

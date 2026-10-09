@@ -44,6 +44,12 @@ finalization, then opens only quality-gated root casts in an already funded epoc
 an epoch from a public nomination and it never spends when the safety switches, balance floor, or
 per-run transaction limits fail.
 
+When eligible openings would exhaust the active epoch's market seed, the authenticated keeper tops
+up only the amount those openings need. Total epoch funding is bounded by
+`MARKET_MAX_EPOCH_SEED_MON` (currently 0.05 MON), and the operator retains the configured balance
+floor. If that cap is exhausted, the keeper reports skipped candidates and waits for the next
+epoch; public nominations can use existing capacity but cannot top up the epoch.
+
 The Discover feed's **New** view means markets indexed within the last 30 minutes; it can be empty
 even while older active/closing markets are visible in **All**. Category filters are text/category
 matches over the indexed cast metadata, not settlement states.

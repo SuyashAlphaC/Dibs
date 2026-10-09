@@ -16,7 +16,7 @@ Hackathon judges: see the [submission guide](./SUBMISSION.md), the [production o
 - Envio indexer for epochs, markets, positions, timeouts, allocations, settlements, and scout reputation; the feed polls indexed stake totals for live ranking.
 - Chainlink CRE workflow for observation consensus, deterministic quality scoring, evidence hashing, Monad settlement reports, and secondary challenge review.
 - ERC-165 CRE settlement receiver with Keystone Forwarder authentication, optional workflow-ID pinning, chain-bound reports, and a strict settlement-function allowlist.
-- Authenticated market keeper with fail-closed kill switches, bounded epoch funding, a retained-balance guard before every write, per-run transaction ceilings, exact 24-hour epochs, lifecycle expiry, and finalization.
+- Authenticated market keeper with fail-closed kill switches, just-in-time seed top-ups within a cumulative per-epoch funding cap, a retained-balance guard before every write, per-run transaction ceilings, exact 24-hour epochs, lifecycle expiry, and finalization.
 - Privy-authenticated Farcaster nominations that can open eligible casts only inside an existing keeper-funded epoch and can never create or fund epochs.
 - Quality-gated discovery that requires an established Farcaster account, a Neynar score of at least `0.6`, and substantive root-cast text before a market can open.
 - Farcaster Mini App SDK bootstrap, hosted manifest, launch metadata, and compliant icon/splash/social assets.

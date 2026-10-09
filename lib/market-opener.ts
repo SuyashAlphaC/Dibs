@@ -10,7 +10,9 @@ import {
   qualifiesForDiscovery,
   type DiscoveryPolicy,
 } from "@/lib/discovery-quality";
-import {assertOperatorBalanceFloor,assertOperatorCanSpend,marketAutomationPolicy} from "@/lib/operator-safety";
+import {assertOperatorBalanceFloor,assertOperatorCanSpend,marketAutomationPolicy,planEpochFunding} from "@/lib/operator-safety";
+
+const MAX_MARKETS_PER_EPOCH=100;
 
 const openerAbi=[
   {type:"function",name:"epochCount",stateMutability:"view",inputs:[],outputs:[{name:"",type:"uint256"}]},
@@ -22,6 +24,9 @@ const openerAbi=[
   {type:"function",name:"marketIdByCastHash",stateMutability:"view",inputs:[{name:"",type:"bytes32"}],outputs:[{name:"",type:"uint256"}]},
   {type:"function",name:"markets",stateMutability:"view",inputs:[{name:"",type:"uint256"}],outputs:[{name:"epochId",type:"uint32"},{name:"openedAt",type:"uint40"},{name:"resultSubmittedAt",type:"uint40"},{name:"baselineEngagement",type:"uint64"},{name:"totalUnits",type:"uint128"},{name:"totalStake",type:"uint256"},{name:"qualityGrowthScore",type:"uint256"},{name:"scoutAllocation",type:"uint256"},{name:"creatorAllocation",type:"uint256"},{name:"castHash",type:"bytes32"},{name:"evidenceHash",type:"bytes32"},{name:"creator",type:"address"},{name:"challenger",type:"address"},{name:"resultSubmitted",type:"bool"},{name:"challenged",type:"bool"},{name:"challengeResolved",type:"bool"}]},
   {type:"function",name:"createEpoch",stateMutability:"payable",inputs:[{name:"opensAt",type:"uint40"},{name:"closesAt",type:"uint40"}],outputs:[{name:"epochId",type:"uint256"}]},
+  {type:"function",name:"fundEpoch",stateMutability:"payable",inputs:[{name:"epochId",type:"uint256"}],outputs:[]},
+  {type:"function",name:"marketSeed",stateMutability:"view",inputs:[],outputs:[{name:"",type:"uint256"}]},
+  {type:"function",name:"epochSeedCommitted",stateMutability:"view",inputs:[{name:"epochId",type:"uint256"}],outputs:[{name:"",type:"uint256"}]},
   {type:"function",name:"openMarket",stateMutability:"nonpayable",inputs:[{name:"epochId",type:"uint256"},{name:"castHash",type:"bytes32"},{name:"creator",type:"address"},{name:"baselineEngagement",type:"uint64"}],outputs:[{name:"marketId",type:"uint256"}]},
   {type:"function",name:"expireMissingResult",stateMutability:"nonpayable",inputs:[{name:"marketId",type:"uint256"}],outputs:[]},
   {type:"function",name:"expireChallenge",stateMutability:"nonpayable",inputs:[{name:"marketId",type:"uint256"}],outputs:[]},
@@ -178,14 +183,32 @@ export async function openEligibleMarkets(requestedIdentifier?:string,maxMarkets
     epochTransaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"createEpoch",args:[Number(now),Number(now+86_400n)],value:policy.epochSeed});
     await monadClient.waitForTransactionReceipt({hash:epochTransaction});
   }
+  const [epoch,marketSeed,committed]=await Promise.all([
+    monadClient.readContract({address:contract,abi:openerAbi,functionName:"epochs",args:[epochId]}),
+    monadClient.readContract({address:contract,abi:openerAbi,functionName:"marketSeed"}),
+    monadClient.readContract({address:contract,abi:openerAbi,functionName:"epochSeedCommitted",args:[epochId]}),
+  ]);
+  const marketCap=Math.min(MAX_MARKETS_PER_EPOCH,epochMarketCap??MAX_MARKETS_PER_EPOCH);
+  const remainingSlots=Math.max(0,marketCap-Number(epoch[3]));
+  const withinMarketCap=prepared.slice(0,remainingSlots);
+  for(const {cast} of prepared.slice(remainingSlots))skipped.push({hash:cast.hash,reason:`epoch market limit ${marketCap} reached`});
+  const funding=planEpochFunding({rewardPool:epoch[5],committed,marketSeed,maxEpochSeed:policy.maxEpochSeed,requested:withinMarketCap.length,allowFunding:allowEpochCreation});
+  for(const {cast} of withinMarketCap.slice(funding.openCount))skipped.push({hash:cast.hash,reason:allowEpochCreation?"Epoch seed funding cap reached; wait for the next epoch":"Epoch seed capacity exhausted; the keeper funds eligible markets"});
+  let fundingTransaction:Hex|undefined;
+  if(funding.topUp>0n){
+    assertOperatorCanSpend(await monadClient.getBalance({address:account.address}),{epochSeed:funding.topUp,minOperatorBalance:policy.minOperatorBalance});
+    fundingTransaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"fundEpoch",args:[epochId],value:funding.topUp});
+    const receipt=await monadClient.waitForTransactionReceipt({hash:fundingTransaction});
+    if(receipt.status!=="success")throw new Error(`Epoch funding transaction ${fundingTransaction} reverted`);
+  }
   const opened:Array<{hash:string;transaction:Hex;candidate:MarketCandidate}>=[];
-  for(const {cast,castHash,castCreator,baseline} of prepared){
+  for(const {cast,castHash,castCreator,baseline} of withinMarketCap.slice(0,funding.openCount)){
     assertOperatorBalanceFloor(await monadClient.getBalance({address:account.address}),policy);
     const transaction=await wallet.writeContract({address:contract,abi:openerAbi,functionName:"openMarket",args:[epochId,castHash,castCreator,baseline]});
     await monadClient.waitForTransactionReceipt({hash:transaction});
     opened.push({hash:cast.hash,transaction,candidate:publicCandidate(cast,discovery.now)});
   }
-  return {epochId:epochId.toString(),epochTransaction,discovered:discovery.discovered,eligible:candidates.length,opened,skipped};
+  return {epochId:epochId.toString(),epochTransaction,fundingTransaction,fundingAmount:funding.topUp.toString(),discovered:discovery.discovered,eligible:candidates.length,opened,skipped};
 }
 
 export async function maintainMarkets(){
@@ -204,12 +227,22 @@ export async function maintainMarkets(){
     monadClient.readContract({address:contract,abi:openerAbi,functionName:"resultSubmissionGracePeriod"}),
     monadClient.readContract({address:contract,abi:openerAbi,functionName:"challengeResolutionPeriod"}),
   ]);
+  const readEpoch=(id:bigint)=>monadClient.readContract({address:contract,abi:openerAbi,functionName:"epochs",args:[id]});
+  const epochCache=new Map<number,Awaited<ReturnType<typeof readEpoch>>>();
+  const getEpoch=async(id:number)=>{
+    const cached=epochCache.get(id);
+    if(cached)return cached;
+    const epoch=await readEpoch(BigInt(id));
+    epochCache.set(id,epoch);
+    return epoch;
+  };
   const transactions:Array<{action:string,id:string,transaction:Hex}>=[];
   const write=async(action:string,id:string,execute:()=>Promise<Hex>)=>{
     if(transactions.length>=policy.maxMaintenanceTransactionsPerRun)return false;
     assertOperatorBalanceFloor(await monadClient.getBalance({address:account.address}),policy);
     const transaction=await execute();
     await monadClient.waitForTransactionReceipt({hash:transaction});
+    epochCache.clear();
     transactions.push({action,id,transaction});
     return true;
   };
@@ -218,7 +251,7 @@ export async function maintainMarkets(){
     const market=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"markets",args:[id]});
     const [epochId,,resultSubmittedAt,,,,,,,,,,,resultSubmitted,challenged,challengeResolved]=market;
     epochIds.add(epochId);
-    const epoch=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"epochs",args:[BigInt(epochId)]});
+    const epoch=await getEpoch(epochId);
     const closesAt=epoch[1];
     let action:"expireMissingResult"|"expireChallenge"|null=null;
     if(!resultSubmitted&&now>=closesAt+resultGrace)action="expireMissingResult";
@@ -246,7 +279,7 @@ export async function maintainMarkets(){
     }
   }
   for(const epochId of epochIds){
-    const epoch=await monadClient.readContract({address:contract,abi:openerAbi,functionName:"epochs",args:[BigInt(epochId)]});
+    const epoch=await getEpoch(epochId);
     const [, ,latestResultAt,marketTotal,resultCount,,,finalized]=epoch;
     if(!finalized&&marketTotal>0&&resultCount===marketTotal&&now>=latestResultAt+challengePeriod){
       try{
