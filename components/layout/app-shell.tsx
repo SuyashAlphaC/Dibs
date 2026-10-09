@@ -22,6 +22,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
   const {dashboard}=useScoutDashboard(identity.address);
   const [markets,setMarkets]=useState<CastMarket[]>([]);
   const [scoutSignals,setScoutSignals]=useState<LiveScoutSignal[]>([]);
+  const [marketSource,setMarketSource]=useState<"loading"|"ready"|"unavailable">("loading");
   const shortAddress=identity.address?.match(/^0x[a-fA-F0-9]{40}$/)?`${identity.address.slice(0,6)}…${identity.address.slice(-4)}`:identity.address;
   const accountName=identity.farcaster?.displayName||identity.farcaster?.username||shortAddress||"Wallet scout";
   const accountAvatar=identity.farcaster?<Avatar name={accountName} src={identity.farcaster.avatarUrl} size={34}/>:<span className="wallet-avatar-fallback"><Icon name="profile"/></span>;
@@ -30,13 +31,28 @@ export function AppShell({children}: {children: React.ReactNode}) {
   useEffect(()=>{
     const controller=new AbortController();
     const viewer=identity.farcaster?.fid?`?viewerFid=${identity.farcaster.fid}`:"";
-    fetch(`/api/casts${viewer}`,{signal:controller.signal}).then(response=>response.json()).then((payload:{casts?:CastMarket[];signals?:LiveScoutSignal[]})=>{
-      setMarkets(payload.casts??[]);
-      setScoutSignals((payload.signals??[]).map(signal=>identity.farcaster&&signal.scout.toLowerCase()===identity.address?.toLowerCase()?{...signal,identity:{address:signal.scout,fid:identity.farcaster.fid,username:identity.farcaster.username,displayName:identity.farcaster.displayName||identity.farcaster.username||signal.identity?.displayName||shortScout(signal.scout),avatarUrl:identity.farcaster.avatarUrl}}:signal));
-    }).catch(()=>{});
-    return()=>controller.abort();
-  },[identity.address,identity.farcaster]);
+    let refreshing=false;
+    const refresh=async()=>{
+      if(refreshing||controller.signal.aborted)return;
+      refreshing=true;
+      try{
+        const response=await fetch(`/api/casts${viewer}`,{signal:controller.signal,cache:"no-store"});
+        if(!response.ok)throw new Error("Live markets unavailable");
+        const payload=await response.json() as {casts?:CastMarket[];signals?:LiveScoutSignal[]};
+        setMarkets(payload.casts??[]);
+        setScoutSignals((payload.signals??[]).map(signal=>identity.farcaster&&signal.scout.toLowerCase()===identity.address?.toLowerCase()?{...signal,identity:{address:signal.scout,fid:identity.farcaster.fid,username:identity.farcaster.username,displayName:identity.farcaster.displayName||identity.farcaster.username||signal.identity?.displayName||shortScout(signal.scout),avatarUrl:identity.farcaster.avatarUrl}}:signal));
+        setMarketSource("ready");
+      }catch{
+        if(!controller.signal.aborted){setMarkets([]);setScoutSignals([]);setMarketSource("unavailable");}
+      }finally{refreshing=false;}
+    };
+    void refresh();
+    const interval=window.setInterval(()=>void refresh(),30_000);
+    return()=>{controller.abort();window.clearInterval(interval);};
+  },[identity.address,identity.farcaster?.fid]);
   const topics=Array.from(new Set(markets.map(market=>market.category))).slice(0,7);
+  const closingMarkets=markets.filter(market=>(market.status==="active"||market.status==="closing")&&market.timeLeftMinutes>0)
+    .sort((a,b)=>a.timeLeftMinutes-b.timeLeftMinutes).slice(0,2);
   const shortScout=(address:string)=>`${address.slice(0,6)}…${address.slice(-4)}`;
   return <div className="app-frame">
     <a className="skip-link" href="#main-content">Skip to discovery content</a>
@@ -80,7 +96,7 @@ export function AppShell({children}: {children: React.ReactNode}) {
         <p className="rail-section-label">Signal sectors</p>
         <div className="topic-cloud">{(topics.length?topics:["Farcaster","AI","Culture","Crypto","Builders"]).map(topic=><Link href={`/discover?topic=${encodeURIComponent(topic)}`} key={topic}>{topic}</Link>)}</div>
         <p className="rail-section-label">Markets closing next</p>
-        <div className="closing-list">{markets.slice().sort((a,b)=>a.timeLeftMinutes-b.timeLeftMinutes).slice(0,2).map(market=><Link href={`/market/${market.id}`} className="closing-card" key={market.id}><span className="status-pill active"><i/>Live</span><strong>{market.author.displayName}</strong><p>{market.text.slice(0,76)}{market.text.length>76?"…":""}</p><small>{market.timeLeftMinutes?`${Math.floor(market.timeLeftMinutes/60)}h ${market.timeLeftMinutes%60}m left`:market.status}</small></Link>)}</div>
+        <div className="closing-list">{closingMarkets.map(market=><Link href={`/market/${market.id}`} className="closing-card" key={market.id}><span className={`status-pill ${market.status}`}><i/>{market.status==="closing"?"Closing":"Live"}</span><strong>{market.author.displayName}</strong><p>{market.text.slice(0,76)}{market.text.length>76?"…":""}</p><small>{Math.floor(market.timeLeftMinutes/60)}h {market.timeLeftMinutes%60}m left</small></Link>)}{!closingMarkets.length&&<p className="moment-empty">{marketSource==="loading"?"Checking live markets…":marketSource==="unavailable"?"Live markets are temporarily unavailable.":"No open markets right now."}</p>}</div>
         <div className="rail-summary"><span>Your open conviction</span><strong>{(dashboard?.spent??0).toFixed(3)} MON</strong><div><span>Verified scout rewards</span><b>{(dashboard?.claimed??0).toFixed(3)} MON</b></div></div>
       </aside>
     </div>
