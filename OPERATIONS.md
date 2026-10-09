@@ -123,9 +123,23 @@ already-submitted or resolved markets. The receiver accepts only the official Fo
 workflow ID, chain `10143`, the deployed Dibs address, and the allowlisted settlement calls.
 
 Normal settlement requires no command from the operator. The DON cron owns execution. The GitHub
-workflow `.github/workflows/cre-settlement.yml` runs every 15 minutes only as a health monitor: it
+workflow `.github/workflows/cre-settlement.yml` is scheduled every 15 minutes as a health monitor
+(GitHub can delay scheduled runs): it
 checks an `ACTIVE` workflow, recent successful executions, pin consistency and `/api/health`, then
 uploads evidence. It must not invoke `simulate --broadcast`.
+
+The monitor retries CRE CLI collection failures up to four times, with 2-, 4-, and 8-second delays.
+Each request has a 45-second timeout, and only validated JSON is saved. An authentication/API
+outage is reported as monitoring data unavailable; a returned failed execution still fails the
+health check immediately. Existing freshness and receiver-pin checks remain enforced. The
+`CRE_SETTLEMENT_AUTOMATION_ENABLED=true` GitHub variable enables this monitor, and the
+`CRE_API_KEY` GitHub secret authenticates its read-only CRE requests.
+
+On 2026-10-09, monitor run `37891396913` failed during CRE credential validation and then tried to
+parse an empty status file. Its retained execution history showed five successful DON executions,
+including the `06:00:11Z` completion. This was a monitoring collection failure, not evidence of a
+failed settlement. Persistent collection failures require checking CRE service availability and
+the CI credential; they must never be treated as verified healthy.
 
 Inspect the current DON without writing to chain:
 

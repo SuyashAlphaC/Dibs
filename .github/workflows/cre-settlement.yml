@@ -17,6 +17,9 @@ jobs:
     if: ${{ vars.CRE_SETTLEMENT_AUTOMATION_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
     env:
       CRE_API_KEY: ${{ secrets.CRE_API_KEY }}
     steps:
@@ -27,18 +30,17 @@ jobs:
           cache: npm
       - name: Install verified CRE CLI
         run: |
-          curl -sSL https://app.chain.link/cre/install.sh | bash
+          curl --fail --silent --show-error --location --retry 3 https://app.chain.link/cre/install.sh | bash
           echo "${HOME}/.cre" >> "${GITHUB_PATH}"
           echo "${HOME}/.cre/bin" >> "${GITHUB_PATH}"
-      - name: Verify active DON workflow and recent successful execution
+      - name: Test monitor failure handling
+        run: node --test scripts/collect-cre-status.test.mjs scripts/verify-cre-health.test.mjs
+      - name: Collect fresh CRE monitoring data with bounded retries
         run: |
           test -n "${CRE_API_KEY}" || { echo "Missing CRE_API_KEY secret"; exit 1; }
-          cd oracle
-          cre workflow get . --target staging-settings --json | tee ../cre-don-status.json
-          cre execution list dibs-settlement-testnet --limit 5 --output json > ../cre-don-executions.json
-          cd ..
-          node --test scripts/verify-cre-health.test.mjs
-          node scripts/verify-cre-health.mjs cre-don-status.json cre-don-executions.json
+          node scripts/collect-cre-status.mjs
+      - name: Verify active DON workflow and recent successful execution
+        run: node scripts/verify-cre-health.mjs cre-don-status.json cre-don-executions.json
       - name: Verify system health
         run: |
           curl --fail-with-body --silent --show-error https://dibs-metropolis.vercel.app/api/health > system-health.json
