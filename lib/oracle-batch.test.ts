@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {ORACLE_BATCH_SIZE, ORACLE_HTTP_BUDGET_BYTES, packOracleBatch, selectOracleBatch, splitOracleQueue} from "./oracle-batch";
+import {ORACLE_BATCH_SIZE, ORACLE_HTTP_BUDGET_BYTES, packOracleBatch, prepareOracleBatch, selectOracleBatch, splitOracleQueue} from "./oracle-batch";
 
 test("backlogs are bounded, oldest first and independent of indexer tie order", () => {
   const markets = Array.from({length: 39}, (_, i) => ({marketId: i + 1, closesAt: 100, action: "submit" as const}));
@@ -32,4 +32,27 @@ test("HTTP packing preserves complete evidence and exposes oversized markets", (
   assert.deepEqual(packed.observations, [small]);
   assert.deepEqual(packed.deferred, [1]);
   assert.ok(Buffer.byteLength(JSON.stringify(packed)) < ORACLE_HTTP_BUDGET_BYTES + 100);
+});
+
+test("one missing cast and one retryable provider failure cannot block a valid observation", () => {
+  const missing = new Error("missing cast");
+  const result = prepareOracleBatch(
+    [{marketId: 1}, {marketId: 2}, {marketId: 3}],
+    [{status: "rejected", reason: missing}, {status: "fulfilled", value: {marketId: 2, interactions: []}},
+      {status: "rejected", reason: new Error("Neynar 503")}],
+    reason => reason === missing,
+  );
+  assert.deepEqual(result, {observations: [{marketId: 2, interactions: []}], retryable: [3], unavailable: [1]});
+  assert.equal("failed" in result || "deferred" in result, false);
+});
+
+test("oversized evidence stays retryable and is never truncated into a settlement", () => {
+  const result = prepareOracleBatch(
+    [{marketId: 1}, {marketId: 2}],
+    [{status: "fulfilled", value: {marketId: 1, interactions: [{fid: "a".repeat(ORACLE_HTTP_BUDGET_BYTES)}]}},
+      {status: "fulfilled", value: {marketId: 2, interactions: []}}],
+    () => false,
+  );
+  assert.deepEqual(result.observations, [{marketId: 2, interactions: []}]);
+  assert.deepEqual(result.retryable, [1]);
 });

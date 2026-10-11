@@ -34,7 +34,7 @@ jobs:
           echo "${HOME}/.cre" >> "${GITHUB_PATH}"
           echo "${HOME}/.cre/bin" >> "${GITHUB_PATH}"
       - name: Test monitor failure handling
-        run: node --test scripts/collect-cre-status.test.mjs scripts/verify-cre-health.test.mjs
+        run: node --test scripts/collect-cre-status.test.mjs scripts/verify-cre-health.test.mjs scripts/verify-oracle-observations.test.mjs
       - name: Collect fresh CRE monitoring data with bounded retries
         run: |
           test -n "${CRE_API_KEY}" || { echo "Missing CRE_API_KEY secret"; exit 1; }
@@ -48,6 +48,10 @@ jobs:
             .ok == true and .services.creReceiver.workflowPinned == true and
             (.services.creReceiver.workflowId | ltrimstr("0x")) == ($workflow | ltrimstr("0x"))
           ' system-health.json >/dev/null
+      - name: Verify retryable oracle observation queue
+        run: |
+          curl --fail-with-body --silent --show-error https://dibs-metropolis.vercel.app/api/oracle/observations > oracle-observations.json
+          node scripts/verify-oracle-observations.mjs oracle-observations.json
       - name: Retain DON execution evidence on success or failure
         if: always()
         uses: actions/upload-artifact@v4

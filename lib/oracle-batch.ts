@@ -36,3 +36,23 @@ export function packOracleBatch<T extends {marketId: number}>(observations: T[])
   }
   return {observations: included, deferred};
 }
+
+/** Keep per-market gaps visible without passing `failed`/`deferred` to the deployed DON binary. */
+export function prepareOracleBatch<T extends {marketId: number}>(
+  markets: Array<{marketId: number}>,
+  collected: PromiseSettledResult<T>[],
+  isUnavailable: (reason: unknown) => boolean,
+) {
+  if (markets.length !== collected.length) throw new Error("Observation batch/result mismatch");
+  const packed = packOracleBatch(collected.flatMap(result => result.status === "fulfilled" ? [result.value] : []));
+  const unavailable: number[] = [];
+  const failed: number[] = [];
+  collected.forEach((result, index) => {
+    if (result.status === "rejected") (isUnavailable(result.reason) ? unavailable : failed).push(markets[index].marketId);
+  });
+  return {
+    observations: packed.observations,
+    retryable: [...packed.deferred, ...failed].sort((a, b) => a - b),
+    unavailable: unavailable.sort((a, b) => a - b),
+  };
+}

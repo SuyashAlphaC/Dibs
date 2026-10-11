@@ -39,6 +39,11 @@ test("malformed batches and simulation cannot become production settlements", ()
   assert.throws(() => compactSettlementJson(JSON.stringify({observations: [{...observation, interactions: [observation.interactions[0], observation.interactions[0]]}]})), /Duplicate interaction/);
 });
 
+test("deployed DON ignores separately monitored retryable and unavailable market metadata", () => {
+  const compact = compactSettlementJson(JSON.stringify({observations: [], retryable: [131], unavailable: [132]}));
+  assert.deepEqual(JSON.parse(compact), {settlements: [], deferred: []});
+});
+
 test("onchain preflight skips stale indexer results and resolved challenges", () => {
   assert.equal(isSettlementPending("submit", {resultSubmitted: true, challenged: false, challengeResolved: false}), false);
   assert.equal(isSettlementPending("submit", {resultSubmitted: false, challenged: false, challengeResolved: false}), true);

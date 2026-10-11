@@ -131,8 +131,15 @@ workflow ID, chain `10143`, the deployed Dibs address, and the allowlisted settl
 Normal settlement requires no command from the operator. The DON cron owns execution. The GitHub
 workflow `.github/workflows/cre-settlement.yml` is scheduled every 15 minutes as a health monitor
 (GitHub can delay scheduled runs): it
-checks an `ACTIVE` workflow, recent successful executions, pin consistency and `/api/health`, then
+checks an `ACTIVE` workflow, recent successful executions, pin consistency, `/api/health`, and the
+observation endpoint's retryable queue, then
 uploads evidence. It must not invoke `simulate --broadcast`.
+
+A single unavailable cast or retryable Neynar/size-limited observation never fabricates a result
+or fails the DON execution. `unavailable` is explicitly logged while the keeper's onchain timeout
+remains available. `retryable` is checked separately by the GitHub monitor and fails that health
+check until the market is collected or its settlement window expires. A failed Envio/RPC read,
+consensus disagreement, or unsuccessful EVM report still fails the DON and requires investigation.
 
 The monitor retries CRE CLI collection failures up to four times, with 2-, 4-, and 8-second delays.
 Each request has a 45-second timeout, and only validated JSON is saved. An authentication/API

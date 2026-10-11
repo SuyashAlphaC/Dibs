@@ -26,18 +26,22 @@ the same score, and the same evidence hash after compaction. The consensus budge
 below the 25 KB CRE quota. The live eight-market dry run produced a 2,350-byte consensus payload.
 
 The API selects eight markets at most, prioritizes challenges, then orders by close time and market
-ID. Whole observations are packed within a 180 KB HTTP budget. Oversized or unavailable observations
-are explicitly deferred; their evidence is never truncated and their score is never replaced with
-zero. The remaining markets stay queued for the next scheduled execution. Expired submission or
-challenge windows are left to the keeper's existing permissionless timeout path.
+ID. Whole observations are packed within a 180 KB HTTP budget. A missing cast is reported as
+`unavailable`; a temporary Neynar collection failure or oversized observation is reported as
+`retryable`. Neither becomes a fabricated score or blocks valid markets in the same DON run.
+The independent GitHub monitor fails when `retryable` is nonempty, so an apparently successful
+DON execution is never the sole health signal. Remaining markets stay queued for later scans.
+Expired submission or challenge windows use the keeper's permissionless timeout path.
 
-The HTTP request uses CRE's 10-second timeout and a short shared cache. Neynar collection is bounded
-to seven seconds and isolated per market. Before each report, CRE reads the production receiver's
+The HTTP request uses CRE's 10-second timeout and a short shared cache. Independent Envio and
+onchain timing reads run concurrently; Neynar collection is bounded to seven seconds per market.
+Before each report, CRE reads the production receiver's
 core and the market's onchain state to skip already-submitted results or resolved challenges. A run
 uses at most nine EVM reads, below the 15-call quota. Production rejects labelled simulation inputs.
 
-The monitor checks a recent successful execution and the exact receiver workflow ID, retaining status
-artifacts even on failure. Deployment `ACTIVE` alone is not evidence of successful execution.
+The monitor checks a recent successful execution, the exact receiver workflow ID, system health,
+and the retryable observation queue. It retains CRE status artifacts even on failure but does not
+upload raw Neynar observations. Deployment `ACTIVE` alone is not evidence of successful execution.
 
 When updating, pause, deploy, and pin the new nonzero workflow ID before activating:
 
