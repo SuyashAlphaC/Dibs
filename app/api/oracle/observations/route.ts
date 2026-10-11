@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {getMarketsAwaitingResult,type SettlementMarket} from "@/lib/live-markets";
 import {toNeynarCastHash} from "@/lib/farcaster";
-import {collectQualifiedInteractions} from "@/lib/neynar-observations";
+import {collectQualifiedInteractions,NeynarCastNotFound} from "@/lib/neynar-observations";
 import {ORACLE_BATCH_SIZE,packOracleBatch,selectOracleBatch,splitOracleQueue} from "@/lib/oracle-batch";
 import {getOracleTiming} from "@/lib/oracle-policy";
 
@@ -34,11 +34,13 @@ export async function GET(){
     const collected=await Promise.allSettled(batch.map(market=>observeMarket(market,apiKey)));
     const observations=collected.flatMap(result=>result.status==="fulfilled"?[result.value]:[]);
     const packed=packOracleBatch(observations);
-    const failed=collected.flatMap((result,index)=>result.status==="rejected"?[batch[index].marketId]:[]);
+    const unavailable=collected.flatMap((result,index)=>result.status==="rejected"&&result.reason instanceof NeynarCastNotFound?[batch[index].marketId]:[]);
+    const failed=collected.flatMap((result,index)=>result.status==="rejected"&&!(result.reason instanceof NeynarCastNotFound)?[batch[index].marketId]:[]);
     if(failed.length)console.error("Oracle observations deferred",failed);
+    if(unavailable.length)console.warn("Oracle casts unavailable; awaiting permissionless result timeout",unavailable);
     return NextResponse.json(
-      {...packed,failed,pending:ready.length,expired,batchLimit:ORACLE_BATCH_SIZE},
-      {status:batch.length&&!packed.observations.length?503:200,headers:{"cache-control":"no-store","x-dibs-oracle-source":"envio-neynar"}},
+      {...packed,failed,unavailable,pending:ready.length,expired,batchLimit:ORACLE_BATCH_SIZE},
+      {status:failed.length&&!packed.observations.length?503:200,headers:{"cache-control":"no-store","x-dibs-oracle-source":"envio-neynar"}},
     );
   }catch(error){
     console.error("Oracle observation collection failed",error);

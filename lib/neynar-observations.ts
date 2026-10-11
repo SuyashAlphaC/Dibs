@@ -10,6 +10,10 @@ type NeynarReaction = {object: "likes" | "recasts"; user: NeynarUser};
 type NeynarReply = {author: NeynarUser; direct_replies?: NeynarReply[]};
 type CursorPage = {next?: {cursor?: string | null}};
 
+export class NeynarCastNotFound extends Error {
+  constructor() { super("Neynar cast not found"); }
+}
+
 async function neynar(path: string, params: Record<string, string>, apiKey: string, signal?: AbortSignal) {
   const url = new URL(`https://api.neynar.com${path}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
@@ -18,6 +22,10 @@ async function neynar(path: string, params: Record<string, string>, apiKey: stri
     cache: "no-store",
     signal,
   });
+  if (response.status === 404 && path === "/v2/farcaster/cast/conversation/") {
+    const body = await response.json().catch(() => null) as {message?: unknown} | null;
+    if (typeof body?.message === "string" && /cast\b.*\bnot found/i.test(body.message)) throw new NeynarCastNotFound();
+  }
   if (!response.ok) throw new Error(`Neynar ${path} returned ${response.status}`);
   return response.json() as Promise<unknown>;
 }
