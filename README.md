@@ -2,7 +2,49 @@
 
 Hackathon judges: see the [submission guide](./SUBMISSION.md), the [production operations runbook](./OPERATIONS.md), and the live [/evidence](https://dibs-metropolis.vercel.app/evidence) ledger for the demo path, architecture, sponsor evidence, and explicit execution boundaries.
 
-**Call culture before it matters.** Dibs is a conviction-ranked Farcaster feed on Monad. Scouts buy increasingly expensive conviction units on casts they believe will grow; quality-weighted engagement resolves each epoch, and successful early scouts share the reward allocation.
+**Call culture before it matters.** Dibs is a conviction-ranked Farcaster feed on Monad. Scouts buy increasingly expensive conviction units on casts they believe will grow; quality-weighted engagement informs settlement when observations are available, and successful early scouts share the reward allocation.
+
+## The case for Dibs: Track 2 and four sponsor bounties
+
+### Main track — Social, Attention & Culture
+
+The track asks how open social graphs and competitive feeds can turn cultural participation into
+real ownership. Dibs answers with a working loop, not a feed mockup: **a Farcaster cast becomes a
+Monad market; scouts put MON behind an early call; their onchain conviction changes discovery rank;
+and the outcome becomes a public, inspectable record.** The scout owns a real contract position,
+not a platform-assigned badge. The contract also reserves a creator reward allocation, connecting
+discovery to the person whose work drew the early belief.
+
+This is a competitive feed algorithm with economic accountability. Popularity alone cannot buy the
+top spot: the feed uses Envio-indexed scout positions and stake, while the market's closing result
+uses quality-weighted attention when source observations are available. Farcaster provides the
+open cultural graph and Mini App distribution; Monad provides positions, challenges, allocations,
+and claims. A scout profile makes repeated early calls legible over time. A new participant can
+start with Privy rather than first learning wallet setup, while Nansen's pre-stake context helps
+them question whether apparent community support is concentrated or connected.
+
+The social promise is concrete: creators can be discovered before an algorithm declares them
+popular, communities can see who backed a signal early, and participants can inspect the rules and
+results instead of trusting a private engagement score. The [live Discover feed](https://dibs-metropolis.vercel.app/discover),
+[scout and market evidence](https://dibs-metropolis.vercel.app/evidence), and
+[Monad deployment](./deployments/monad-testnet.md) let judges follow that complete loop. Dibs
+does not claim measured community impact beyond the activity visible in those records.
+
+### Four sponsor bounties — one product, four indispensable integrations
+
+| Bounty | Why Dibs makes a strong case | What judges can verify |
+| --- | --- | --- |
+| **Best Use of Envio** | HyperIndex is the product's read layer: it turns Monad events into the live conviction feed, stake-ranked markets, early-scout ledger, settlement states, and reputation. Remove Envio and the discovery and proof experience loses its current onchain state. | Inspect the [indexer](./indexer), an indexed market in [Discover](https://dibs-metropolis.vercel.app/discover), and the [live evidence ledger](https://dibs-metropolis.vercel.app/evidence). |
+| **Best workflow with CRE** | The deployed DON workflow is the settlement orchestrator, not a local-only proof. DON nodes compute deterministic quality scores and evidence hashes, reach consensus, and deliver chain-bound reports through the Keystone Forwarder to a workflow-pinned Monad receiver. Challenge re-observation is part of the same design. | Check the [active workflow and authenticated market-32 and market-33 receipts](./evidence/live-don-settlement/README.md), including a positive score for market 33, then inspect the [workflow code](./oracle). |
+| **Privy!** | Privy participates beyond login: it creates embedded wallets, links Farcaster identity, protects nominations with verified sessions, and lets a scout approve an explicit MON conviction transaction while eligible embedded-wallet gas is sponsored. Identity, action, and the resulting Envio position form one user journey. | Follow the [judge-facing Privy flow](https://dibs-metropolis.vercel.app/privy) and [identity-to-action implementation map](./evidence/privy/README.md). A fresh wallet transaction is the strongest end-to-end demo proof. |
+| **Best use of Nansen** | Conviction Lens makes wallet intelligence a pre-stake decision feature: exact Envio stakes are joined to Nansen related-wallet results, with concentration, observed connections, inspectable source evidence, and explicit coverage limits. Nansen does not decide settlement or silently label wallets safe. | Inspect the [integration and live field capture](./evidence/nansen/README.md) and [Conviction Lens](https://dibs-metropolis.vercel.app/intelligence). Six real market-32 backers were queried; no relationships were returned, and the UI says so. |
+
+The differentiator is the **connected path from social discovery to user-owned conviction to
+verifiable outcome**. Each sponsor powers a necessary stage of that path rather than an isolated
+API call. The evidence also exposes limits honestly: an unavailable Farcaster cast is not assigned
+a fabricated quality score, Nansen's empty response is not proof of independent ownership, and a
+configured integration is not presented as a completed user transaction. This is Dibs' strongest
+evidence-backed submission case; comparative ranking and prizes remain the judges' decision.
 
 ## What is implemented
 
@@ -129,28 +171,11 @@ The canonical current deployment, runtime, recovery, and judge-demo sequence is 
 6. Put the **receiver address** in `oracle/config.testnet.json`, deploy with `cre workflow deploy . --target staging-settings --yes`, and pin the returned workflow ID on the receiver. Confirm `cre workflow get . --target staging-settings --json` reports `ACTIVE` before enabling DON mode in the app.
 7. Rehearse one normal settlement and one challenged/bot-filtered settlement before recording the demo.
 
-The production keeper is scheduled through Upstash QStash every five minutes. QStash calls the
-authenticated `/api/markets/open` endpoint directly, retries transient failures three times, and
-redacts the forwarded bearer token from its logs. The management script defaults to QStash's
-US region (`qstash-us-east-1.upstash.io`) to match the Vercel `iad1` deployment. GitHub Actions remains available only as a
-manual recovery path after cutover.
-
-To configure or update the schedule, add `QSTASH_TOKEN` and the existing
-`DIBS_CRON_SECRET` to GitHub Actions secrets, then run:
-
-```sh
-gh workflow run qstash-market-keeper.yml -f operation=configure
-gh run watch --workflow qstash-market-keeper.yml
-```
-
-The configure operation uses the stable schedule ID `dibs-market-keeper-production`, so rerunning
-it updates the existing schedule instead of creating duplicates. Verify it at any time with
-`gh workflow run qstash-market-keeper.yml -f operation=verify`. Roll back by running the workflow
-with `operation=delete` and re-enabling the schedule block in `market-keeper.yml`.
-
-The GitHub workflow retains `workflow_dispatch` as the recovery path but has no scheduled trigger.
-Use it only if the QStash schedule is deleted or paused, then restore QStash ownership immediately.
-Farcaster ownership for
+The production keeper is scheduled by Upstash QStash every five minutes. QStash calls the
+authenticated `/api/markets/open` endpoint, retries transient delivery failures, and redacts the
+forwarded bearer token from its logs. Its stable schedule ID is
+`dibs-market-keeper-production`; configuration, verification, and recovery steps are in the
+[operations runbook](./OPERATIONS.md). Farcaster ownership for
 `dibs-metropolis.vercel.app` is signed by FID `2459338`; the association is stored in Vercel and
 served through the production manifest.
 
@@ -168,23 +193,15 @@ record, respect the epoch market cap, and never create a funded epoch.
 The deployed CRE workflow owns settlement execution on the DON; it wakes every two minutes from
 its Cron trigger and processes up to eight markets through the pinned Keystone receiver. Each node
 scores full observations before consensus, reducing the agreed payload to scores and evidence hashes.
-Onchain reads skip stale indexer results. `.github/workflows/cre-settlement.yml` is a monitor only:
-it requires an `ACTIVE` workflow, a recent `SUCCESS` execution without errors, and a receiver pin
-matching the deployed workflow ID. It retains execution evidence even on failure. `/api/health`
-checks dependencies and the queue; execution success is checked separately by the monitor.
-The monitor must never invoke the local `simulate --broadcast` fallback
-when `NEXT_PUBLIC_CRE_SETTLEMENT_MODE=don`. The fallback remains available only by explicitly setting
-`CRE_SETTLEMENT_MODE=simulation` in a local environment.
+Onchain reads skip stale indexer results. The separate health monitor checks that the workflow is
+`ACTIVE`, that a recent execution succeeded, that the receiver pins the deployed workflow ID,
+and that the observation queue is healthy. `/api/health` checks dependencies and queue readiness;
+it does not substitute for DON execution evidence. Market-level provider gaps remain explicit and
+retryable without blocking other valid markets; global dependency, consensus, or onchain failures
+remain visible rather than being reported as successful settlements.
 
 `npm run proof:stake` is the reproducible live proof harness. It buys one unit on an active,
 compliant market with a dedicated testnet key and fails unless the resulting position appears in
-the production Envio-backed API. For an adversarial rehearsal, set
-`CHALLENGE_DEMO_ENABLED=true` and `CHALLENGE_DEMO_MARKET_ID` only for a closed market without a
-result, then run
-`CRE_TARGET=challenge-demo-settings DIBS_OBSERVATION_URL=https://dibs-metropolis.vercel.app/api/oracle/challenge-demo npm run cre:broadcast`.
-The fixture is explicitly labelled as simulated; disable it immediately after the inflated report,
-challenge through the UI, and use the normal production broadcast to recompute from real Neynar
-data. The endpoint is disabled by default.
-
-The isolated `npm run cre:broadcast` and `simulation-settings` targets are rehearsal paths only;
-they are never the production settlement flow.
+the production Envio-backed API. For settlement proof, use the
+[recorded live DON receipts](./evidence/live-don-settlement/README.md) and inspect the active
+workflow with `cre workflow get . --target staging-settings --json` from `oracle/`.
